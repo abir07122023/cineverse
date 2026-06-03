@@ -1,10 +1,9 @@
 /* ============================================================
-   CINEFLIX — script.js
-   Netflix-style movie SPA with TMDB, streaming embeds & ad slots
+   CINEVERSE - script.js
+   Netflix-style movie SPA powered by TMDB
    ============================================================ */
 
-// ─── CONFIG ──────────────────────────────────────────────────
-const TMDB_KEY    = '9337e2d4c1e35ba4b07ba12f5e41a58e';
+const TMDB_KEY    = '5e2176b3af584e2047c93f889e185eca';
 const TMDB_BASE   = 'https://api.themoviedb.org/3';
 const IMG_BASE    = 'https://image.tmdb.org/t/p';
 const EMBED_SRCS  = [
@@ -13,64 +12,9 @@ const EMBED_SRCS  = [
   { label:'VidSrc',     url:id=>`https://vidsrc.xyz/embed/movie/${id}` },
   { label:'SuperEmbed', url:id=>`https://multiembed.mov/directstream.php?video_id=${id}` },
 ];
-let currentMedia   = null;
 let currentPage    = 'home';
 let searchTimeout  = null;
 
-// ─── AGGRESSIVE AD HELPERS ──────────────────────────────────
-// These fire popunders, interstitials & banners using scripts loaded in <head>.
-// Replace placeholder zone IDs above before going live.
-
-function firePopunder(){
-  // Triggers via PropellerAds & PopAds (both loaded in <head>)
-  // They auto-open a new tab behind the current one.
-  try {
-    // Manual backup: open a hidden pop-under via window.open trick
-    var p = window.open('about:blank', '_blank');
-    if (p) {
-      p.document.write('<html><head><title>Loading...</title><meta charset="UTF-8"></head><body>Please wait...</body></html>');
-      p.document.close();
-      try { p.blur(); } catch(e){}
-      window.focus();
-    }
-  } catch(e) {}
-}
-
-function triggerInterstitial(callback){
-  // Full-screen ad overlay for 2s before allowing the watch page
-  var overlay = document.createElement('div');
-  overlay.id = 'interstitial-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center';
-  overlay.innerHTML = `
-    <div style="width:100%;max-width:728px;height:90px;margin-bottom:20px;border-radius:6px;overflow:hidden;background:#111">
-      <iframe src="//YOUR_ADSTERRA_BANNER_ZONE.com/afu.php?zoneid=YOUR_ZONE_ID" width="728" height="90" style="border:none" loading="lazy"></iframe>
-    </div>
-    <div style="color:#666;font-size:.9rem;text-align:center">
-      <p>⏳ Preparing your stream...</p>
-      <p style="font-size:.7rem;margin-top:4px;color:#444">Ad will close automatically</p>
-    </div>`;
-  document.body.appendChild(overlay);
-  firePopunder(); // extra popunder on watch click
-  setTimeout(function(){
-    var el = document.getElementById('interstitial-overlay');
-    if (el) el.remove();
-    if (callback) callback();
-  }, 2500);
-}
-
-function fillAdSlots(){
-  // Injects ad iframes into .ad-banner placeholders
-  document.querySelectorAll('.ad-banner').forEach(function(el){
-    if (el.querySelector('iframe, script')) return;
-    var ifr = document.createElement('iframe');
-    ifr.src = '//YOUR_ADSTERRA_BANNER_ZONE.com/afu.php?zoneid=YOUR_ZONE_ID';
-    ifr.width = '728'; ifr.height = '90';
-    ifr.style.border = 'none'; ifr.loading = 'lazy';
-    el.appendChild(ifr);
-  });
-}
-
-// ─── AUTH (local‑storage mock) ──────────────────────────────
 const AUTH_KEY = 'cineverse_user';
 function getAuth(){ try{return JSON.parse(localStorage.getItem(AUTH_KEY))}catch(e){return null}}
 function setAuth(u){localStorage.setItem(AUTH_KEY,JSON.stringify(u)); renderAuthUI()}
@@ -86,23 +30,15 @@ function renderAuthUI(){
 function openModal(id){document.getElementById(id).style.display='flex'}
 function closeModal(id){document.getElementById(id).style.display='none'}
 function closeUserMenu(){const m=document.getElementById('user-menu');if(m)m.style.display='none'}
+function toast(msg){const c=document.getElementById('toast-container');const el=document.createElement('div');el.className='toast';el.textContent=msg;c.appendChild(el);setTimeout(()=>el.remove(),3000);}
 
-// ─── TOAST ──────────────────────────────────────────────────
-function toast(msg,type='info'){
-  const c=document.getElementById('toast-container');
-  const el=document.createElement('div');el.className='toast';el.textContent=msg;
-  c.appendChild(el);setTimeout(()=>el.remove(),3000);
-}
-
-// ─── NAVIGATION ─────────────────────────────────────────────
 function navigate(page,params={}){
-  currentPage=page; firePopunder();
+  currentPage=page;
   renderPage(page,params);
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.nav===page));
 }
 function navigateGenre(id,name){navigate('genre',{genreId:id,genreName:name})}
 
-// ─── API ────────────────────────────────────────────────────
 async function tmdb(endpoint,params={}){
   const q=new URLSearchParams({api_key:TMDB_KEY,language:'en-US',...params}).toString();
   const r=await fetch(`${TMDB_BASE}${endpoint}?${q}`);
@@ -110,7 +46,6 @@ async function tmdb(endpoint,params={}){
   return r.json();
 }
 
-// ─── RENDER ENGINE ──────────────────────────────────────────
 function renderPage(page,params){
   const root=document.getElementById('app-root');
   root.innerHTML='<div class="spinner"></div>';
@@ -128,7 +63,6 @@ function renderPage(page,params){
   (pages[page]||pages.home)();
 }
 
-// ─── HOME ───────────────────────────────────────────────────
 async function renderHome(){
   const root=document.getElementById('app-root');
   const [trending,popular,topRated,nowPlaying]=await Promise.all([
@@ -143,19 +77,14 @@ async function renderHome(){
       <img class="hero-backdrop" src="${IMG_BASE}/w1280${hero.backdrop_path}" alt="" loading="lazy" onerror="this.style.display='none'">
       <div class="hero-overlay">
         <div class="hero-title">${hero.title||hero.name}</div>
-        <div class="hero-meta">
-          <span>★ ${hero.vote_average?.toFixed(1)}</span>
-          <span>${hero.release_date?.slice(0,4)||''}</span>
-        </div>
+        <div class="hero-meta"><span>★ ${hero.vote_average?.toFixed(1)}</span><span>${hero.release_date?.slice(0,4)||''}</span></div>
         <div class="hero-desc">${hero.overview||''}</div>
-        <button class="hero-btn" onclick="firePopunder();navigate('detail',{type:'movie',id:${hero.id}})">▶ Watch Now</button>
+        <button class="hero-btn" onclick="navigate('detail',{type:'movie',id:${hero.id}})">▶️ Watch Now</button>
       </div>
-    </div>
-    <div class="ad-banner"><!-- BANNER AD SLOT #1 --></div>
-  `;
+    </div>`;
   const sections=[
     {title:'🔥 Trending Now',  data:trending.results},
-    {title:'⭐ Top Rated',     data:topRated.results},
+    {title:'⭐️ Top Rated',     data:topRated.results},
     {title:'📺 Popular',      data:popular.results},
     {title:'🎬 Now Playing',  data:nowPlaying.results},
   ];
@@ -164,9 +93,7 @@ async function renderHome(){
     for(const m of s.data)html+=movieCard(m);
     html+=`</div>`;
   }
-  html+=`<div class="ad-banner"><!-- BANNER AD SLOT #2 --></div>`;
   root.innerHTML=html;
-  setTimeout(fillAdSlots,100);
 }
 
 function movieCard(m){
@@ -174,30 +101,18 @@ function movieCard(m){
   const p=m.poster_path?`${IMG_BASE}/w342${m.poster_path}`:'';
   const id=m.id; const type=m.media_type||'movie';
   const yr=(m.release_date||m.first_air_date||'').slice(0,4);
-  const rt=m.vote_average?.toFixed(1)||'N/A';
   return `<div class="movie-card" onclick="navigate('detail',{type:'${type}',id:${id}})">
     <img class="movie-poster" src="${p}" alt="${t}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22450%22 fill=%22%231a1a24%22><rect width=%22300%22 height=%22450%22/></svg>'">
-    <div class="movie-info">
-      <div class="movie-title">${t}</div>
-      <div class="movie-sub"><span>${yr}</span><span class="movie-rating">★ ${rt}</span></div>
-    </div>
+    <div class="movie-info"><div class="movie-title">${t}</div><div class="movie-sub"><span>${yr}</span></div></div>
   </div>`;
 }
 
-// ─── LISTING ────────────────────────────────────────────────
 async function renderListing(mediaType,list,title){
   const root=document.getElementById('app-root');
-  let page=1; let allData=[];
+  let page=1;
   const p1=await tmdb(`/${mediaType}/${list}`,{page:1});
-  allData=p1.results;
-  let html=`<h2 class="section-title" style="margin-top:16px">${title}</h2>
-    <div class="filter-bar">
-      <button class="filter-btn active" data-sort="popularity">Popularity</button>
-      <button class="filter-btn" data-sort="vote_average">Rating</button>
-      <button class="filter-btn" data-sort="release_date">Year</button>
-    </div>
-    <div class="movie-grid" id="listing-grid">`;
-  for(const m of allData)html+=movieCard(m);
+  let html=`<h2 class="section-title" style="margin-top:16px">${title}</h2><div class="movie-grid" id="listing-grid">`;
+  for(const m of p1.results)html+=movieCard(m);
   html+=`</div><button class="load-more-btn" id="load-more-btn">Load More</button>`;
   root.innerHTML=html;
   document.getElementById('load-more-btn').onclick=async()=>{
@@ -206,32 +121,13 @@ async function renderListing(mediaType,list,title){
     for(const m of p.results)grid.innerHTML+=movieCard(m);
     if(page>=p.total_pages)document.getElementById('load-more-btn').remove();
   };
-  document.querySelectorAll('.filter-btn').forEach(btn=>{
-    btn.onclick=()=>{
-      document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      const sort=btn.dataset.sort;
-      const grid=document.getElementById('listing-grid');
-      const cards=Array.from(grid.children);
-      cards.sort((a,b)=>{
-        const va=parseFloat(a.querySelector('.movie-rating')?.textContent.replace('★','')||0);
-        const vb=parseFloat(b.querySelector('.movie-rating')?.textContent.replace('★','')||0);
-        if(sort==='release_date')return vb-va;
-        if(sort==='vote_average')return vb-va;
-        return 0;
-      });
-      grid.innerHTML=''; cards.forEach(c=>grid.appendChild(c));
-    };
-  });
 }
 
-// ─── GENRE ──────────────────────────────────────────────────
 async function renderGenre(genreId,genreName){
   const root=document.getElementById('app-root');
   let page=1;
   const p1=await tmdb('/discover/movie',{with_genres:genreId,sort_by:'popularity.desc',page:1});
-  let html=`<h2 class="section-title" style="margin-top:16px">${genreName}</h2>
-    <div class="movie-grid" id="genre-grid">`;
+  let html=`<h2 class="section-title" style="margin-top:16px">${genreName}</h2><div class="movie-grid" id="genre-grid">`;
   for(const m of p1.results)html+=movieCard(m);
   html+=`</div><button class="load-more-btn" id="load-more-btn">Load More</button>`;
   root.innerHTML=html;
@@ -243,11 +139,10 @@ async function renderGenre(genreId,genreName){
   };
 }
 
-// ─── DETAIL ─────────────────────────────────────────────────
 async function renderDetail(type,id){
   const root=document.getElementById('app-root');
   try{
-    const d=await tmdb(`/${type}/${id}`,{append_to_response:'credits,videos,external_ids'});
+    const d=await tmdb(`/${type}/${id}`,{append_to_response:'credits,videos'});
     const cast=(d.credits?.cast||[]).slice(0,12);
     const trailer=d.videos?.results?.find(v=>v.type==='Trailer'&&v.site==='YouTube');
     const bg=d.backdrop_path?`${IMG_BASE}/w1280${d.backdrop_path}`:'';
@@ -255,11 +150,8 @@ async function renderDetail(type,id){
     const title=d.title||d.name||'';
     const yr=(d.release_date||d.first_air_date||'').slice(0,4);
     const genres=d.genres||[];
-    const budget=d.budget?`$${(d.budget/1e6).toFixed(1)}M`:'—';
-    const revenue=d.revenue?`$${(d.revenue/1e6).toFixed(1)}M`:'—';
     const runtime=d.runtime?`${d.runtime} min`:(d.episode_run_time?.[0]?`${d.episode_run_time[0]} min`:'—');
     const rating=d.vote_average?.toFixed(1)||'N/A';
-    const status=d.status||'';
     const overview=d.overview||'No overview available.';
     const tagline=d.tagline||'';
 
@@ -268,26 +160,18 @@ async function renderDetail(type,id){
         ${bg?`<img class="detail-backdrop" src="${bg}" alt="" onerror="this.style.display='none'">`:''}
         <div class="detail-section">
           <div class="detail-top">
-            <img class="detail-poster" src="${poster}" alt="${title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22450%22 fill=%22%231a1a24%22><rect width=%22300%22 height=%22450%22/></svg>'">
+          <img class="detail-poster" src="${poster}" alt="${title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22450%22 fill=%22%231a1a24%22><rect width=%22300%22 height=%22450%22/></svg>'">
             <div class="detail-info">
               <h1 class="detail-title">${title}</h1>
               ${tagline?`<p class="detail-tagline">${tagline}</p>`:''}
-              <div class="detail-meta">
-                <span>${yr}</span><span>${runtime}</span><span>★ ${rating}</span><span>${status}</span>
-              </div>
+              <div class="detail-meta"><span>${yr}</span><span>${runtime}</span><span>★ ${rating}</span></div>
               <div class="detail-meta">${genres.map(g=>`<span class="genre-pill">${g.name}</span>`).join('')}</div>
-              ${trailer?`<a href="https://youtube.com/watch?v=${trailer.key}" target="_blank" class="btn-secondary" style="margin:8px 0;width:fit-content">▶ Watch Trailer</a>`:''}
+              ${trailer?`<a href="https://youtube.com/watch?v=${trailer.key}" target="_blank" class="btn-secondary" style="margin:8px 0;width:fit-content">▶️ Watch Trailer</a>`:''}
               <div class="watch-section">
-                <button class="watch-btn" onclick="firePopunder();navigate('watch',{type:'${type}',id:${id}})">▶ Watch Now</button>
+                <button class="watch-btn" onclick="navigate('watch',{type:'${type}',id:${id}})">▶️ Watch Now</button>
                 ${EMBED_SRCS.map((s,i)=>`<button class="server-btn" onclick="navigate('watch',{type:'${type}',id:${id},src:${i}})">${s.label}</button>`).join('')}
               </div>
               <p class="detail-overview" style="margin-top:16px">${overview}</p>
-              <div class="detail-stats">
-                <div class="stat-box"><div class="stat-label">Budget</div><div class="stat-value">${budget}</div></div>
-                <div class="stat-box"><div class="stat-label">Revenue</div><div class="stat-value">${revenue}</div></div>
-                <div class="stat-box"><div class="stat-label">Rating</div><div class="stat-value">★ ${rating}</div></div>
-                <div class="stat-box"><div class="stat-label">Status</div><div class="stat-value">${status}</div></div>
-              </div>
             </div>
           </div>
           ${cast.length?`<h3 style="margin-top:24px;font-size:1.1rem;font-weight:700">Cast</h3>
@@ -297,43 +181,32 @@ async function renderDetail(type,id){
               <div class="cast-name">${c.name}</div>
               <div class="cast-role">${c.character||''}</div>
             </div>`).join('')}</div>`:''}
-          <div class="ad-banner" style="margin-top:20px"><!-- BANNER AD SLOT #3 --></div>
         </div>
       </div>`;
     root.innerHTML=html;
   }catch(e){root.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text-muted)">⚠️ Failed to load details.</div>`}
 }
 
-// ─── WATCH PAGE ─────────────────────────────────────────────
 function renderWatch(type,id,srcIdx=0){
   const root=document.getElementById('app-root');
   const src=EMBED_SRCS[srcIdx]||EMBED_SRCS[0];
   const embedUrl=src.url(id);
-  triggerInterstitial(function(){
-    let html=`
-      <div class="watch-page">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-          <button class="btn-secondary" onclick="navigate('detail',{type:'${type}',id:${id}})">← Back</button>
-          <span style="font-weight:600;font-size:1rem">${src.label}</span>
-        </div>
-        <div class="watch-player-wrap">
-          <iframe src="${embedUrl}" allowfullscreen allow="autoplay;encrypted-media" loading="lazy"></iframe>
-        </div>
-        <div class="server-selector">
-          ${EMBED_SRCS.map((s,i)=>`<button class="server-btn ${i===srcIdx?'active':''}" onclick="navigate('watch',{type:'${type}',id:${id},src:${i}})">${s.label}</button>`).join('')}
-        </div>
-        <div class="ad-banner"><!-- BANNER AD SLOT #4 --></div>
-        <!-- Sticky bottom ad container -->
-        <div style="position:sticky;bottom:0;z-index:100;margin-top:16px">
-          <div class="ad-banner" style="margin:0"><!-- STICKY BOTTOM AD --></div>
-        </div>
-      </div>`;
-    root.innerHTML=html;
-    setTimeout(fillAdSlots,100);
-  });
+  let html=`
+    <div class="watch-page">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="btn-secondary" onclick="navigate('detail',{type:'${type}',id:${id}})">← Back</button>
+        <span style="font-weight:600;font-size:1rem">${src.label}</span>
+      </div>
+      <div class="watch-player-wrap">
+        <iframe src="${embedUrl}" allowfullscreen allow="autoplay;encrypted-media" loading="lazy"></iframe>
+      </div>
+      <div class="server-selector">
+        ${EMBED_SRCS.map((s,i)=>`<button class="server-btn ${i===srcIdx?'active':''}" onclick="navigate('watch',{type:'${type}',id:${id},src:${i}})">${s.label}</button>`).join('')}
+      </div>
+    </div>`;
+  root.innerHTML=html;
 }
 
-// ─── SEARCH ─────────────────────────────────────────────────
 async function renderSearch(query){
   const root=document.getElementById('app-root');
   if(!query||!query.trim()){root.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text-muted)">Type something to search.</div>`;return}
@@ -346,15 +219,13 @@ async function renderSearch(query){
     const all=[...movies.results.map(m=>({...m,media_type:'movie'})),
                ...tv.results.map(t=>({...t,media_type:'tv'}))];
     if(!all.length){root.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text-muted)">No results for "${query}"</div>`;return}
-    let html=`<h2 class="section-title" style="margin-top:16px">Search: "${query}" <span style="font-weight:400;color:var(--text-muted);font-size:.85rem">${all.length} results</span></h2>
-      <div class="movie-grid">`;
+    let html=`<h2 class="section-title" style="margin-top:16px">Search: "${query}" <span style="font-weight:400;color:var(--text-muted);font-size:.85rem">${all.length} results</span></h2><div class="movie-grid">`;
     for(const m of all)html+=movieCard(m);
-    html+=`</div>`;
+     html+=`</div>`;
     root.innerHTML=html;
   }catch(e){root.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text-muted)">Search failed.</div>`}
 }
 
-// ─── MY LIST ────────────────────────────────────────────────
 function renderMyList(){
   const root=document.getElementById('app-root');
   const u=getAuth();
@@ -363,8 +234,7 @@ function renderMyList(){
   const cats=['watching','completed','plan_to_watch','on_hold','dropped'];
   const catLabels={watching:'Watching',completed:'Completed',plan_to_watch:'Plan to Watch',on_hold:'On Hold',dropped:'Dropped'};
   let activeCat='watching';
-  let html=`<h2 class="section-title" style="margin-top:16px">My List</h2>
-    <div class="list-categories">`;
+  let html=`<h2 class="section-title" style="margin-top:16px">My List</h2><div class="list-categories">`;
   for(const c of cats)html+=`<button class="list-cat-btn ${c===activeCat?'active':''}" data-cat="${c}">${catLabels[c]}</button>`;
   html+=`</div><div class="list-grid" id="mylist-grid">`;
   const items=list[activeCat]||[];
@@ -396,7 +266,6 @@ function renderMyList(){
   });
 }
 
-// ─── ACTOR ──────────────────────────────────────────────────
 async function renderActor(id){
   const root=document.getElementById('app-root');
   root.innerHTML='<div class="spinner"></div>';
@@ -418,21 +287,15 @@ async function renderActor(id){
   }catch(e){root.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text-muted)">Failed to load actor.</div>`}
 }
 
-// ─── EVENT BINDING ──────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',function(){
   renderAuthUI();
-
-  window.addEventListener('scroll',function(){
+   window.addEventListener('scroll',function(){
     document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>40);
   });
-
-  // Genre dropdown
   var gb=document.getElementById('genresBtn');
   var gd=document.getElementById('genresDropdown');
   if(gb) gb.addEventListener('click',function(e){e.stopPropagation();gd.classList.toggle('show')});
   document.addEventListener('click',function(){if(gd)gd.classList.remove('show')});
-
-  // Auth modal triggers
   document.getElementById('open-signin-btn')?.addEventListener('click',function(){openModal('auth-modal')});
   document.getElementById('open-signup-btn')?.addEventListener('click',function(){
     openModal('auth-modal');
@@ -442,8 +305,6 @@ document.addEventListener('DOMContentLoaded',function(){
   });
   document.getElementById('auth-close-btn')?.addEventListener('click',function(){closeModal('auth-modal')});
   document.getElementById('profile-close-btn')?.addEventListener('click',function(){closeModal('profile-modal')});
-
-  // Auth tabs
   document.querySelectorAll('.auth-tab-btn').forEach(function(btn){
     btn.addEventListener('click',function(){
       document.querySelectorAll('.auth-tab-btn').forEach(function(b){b.classList.remove('active')});
@@ -453,8 +314,6 @@ document.addEventListener('DOMContentLoaded',function(){
       document.getElementById('signup-form').style.display=isSignin?'none':'block';
     });
   });
-
-  // Sign in
   document.getElementById('signin-submit-btn')?.addEventListener('click',function(){
     var email=document.getElementById('si-email').value.trim();
     var pass=document.getElementById('si-password').value;
@@ -462,8 +321,6 @@ document.addEventListener('DOMContentLoaded',function(){
     setAuth({name:email.split('@')[0],email});
     closeModal('auth-modal'); toast('Signed in!');
   });
-
-  // Sign up
   document.getElementById('signup-submit-btn')?.addEventListener('click',function(){
     var name=document.getElementById('su-name').value.trim();
     var email=document.getElementById('su-email').value.trim();
@@ -476,24 +333,18 @@ document.addEventListener('DOMContentLoaded',function(){
     setAuth({name,email});
     closeModal('auth-modal'); toast('Account created!');
   });
-
-  // User avatar -> menu
   document.getElementById('user-avatar-btn')?.addEventListener('click',function(e){
     e.stopPropagation();
     var m=document.getElementById('user-menu');
     if(m) m.style.display=m.style.display==='block'?'none':'block';
   });
   document.addEventListener('click',function(){var m=document.getElementById('user-menu');if(m)m.style.display='none'});
-
-  // Search
   document.getElementById('global-search')?.addEventListener('input',function(e){
     clearTimeout(searchTimeout);
     var q=e.target.value.trim();
     if(!q){if(currentPage==='search')navigate('home');return}
     searchTimeout=setTimeout(function(){navigate('search',{query:q})},400);
   });
-
-  // Load home
   navigate('home');
 });
 
@@ -508,3 +359,5 @@ function openProfile(){
     </div>`;
   openModal('profile-modal');
 }
+          
+        
