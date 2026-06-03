@@ -113,8 +113,7 @@ input,textarea{font:inherit;color:inherit}
 .user-menu-item:hover{background:var(--bg-hover);color:var(--text-primary)}
 
 /* ----- Modal ----- */
-.modal-overlay{
-  position:fixed;inset:0;z-index:500;
+.modal-overlay{position:fixed;inset:0;z-index:500;
   background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
   display:flex;align-items:center;justify-content:center;
   padding:16px;
@@ -192,8 +191,7 @@ input,textarea{font:inherit;color:inherit}
   -webkit-mask-image:linear-gradient(to bottom,#000 50%,transparent);
 }
 .detail-section{padding:16px 24px;max-width:1200px;margin:0 auto}
-.detail-top{display:flex;gap:24px;margin-top:-120px;position:relative;z-index:10;flex-wrap:wrap}
-.detail-poster{width:220px;border-radius:var(--radius);box-shadow:var(--shadow);flex-shrink:0}
+.detail-top{display:flex;gap:24px;margin-top:-120px;position:relative;z-index:10;flex-wrap:wrap}.detail-poster{width:220px;border-radius:var(--radius);box-shadow:var(--shadow);flex-shrink:0}
 .detail-info{flex:1;min-width:240px}
 .detail-title{font-size:1.8rem;font-weight:800}
 .detail-tagline{font-size:.9rem;color:var(--text-muted);font-style:italic;margin-bottom:8px}
@@ -265,8 +263,7 @@ input,textarea{font:inherit;color:inherit}
 .search-section{padding:16px}
 .search-highlight{background:var(--accent-glow);padding:1px 4px;border-radius:2px}
 
-/* ----- Actor page ----- */
-.actor-header{display:flex;gap:24px;padding:24px;flex-wrap:wrap}
+/* ----- Actor page ----- */.actor-header{display:flex;gap:24px;padding:24px;flex-wrap:wrap}
 .actor-photo{width:200px;border-radius:var(--radius);flex-shrink:0}
 .actor-bio{flex:1;min-width:240px}
 .actor-name{font-size:1.8rem;font-weight:800}
