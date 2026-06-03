@@ -77,16 +77,16 @@ async function renderHome(){
       <img class="hero-backdrop" src="${IMG_BASE}/w1280${hero.backdrop_path}" alt="" loading="lazy" onerror="this.style.display='none'">
       <div class="hero-overlay">
         <div class="hero-title">${hero.title||hero.name}</div>
-        <div class="hero-meta"><span>★ ${hero.vote_average?.toFixed(1)}</span><span>${hero.release_date?.slice(0,4)||''}</span></div>
+        <div class="hero-meta"><span>â ${hero.vote_average?.toFixed(1)}</span><span>${hero.release_date?.slice(0,4)||''}</span></div>
         <div class="hero-desc">${hero.overview||''}</div>
-        <button class="hero-btn" onclick="navigate('detail',{type:'movie',id:${hero.id}})">▶️ Watch Now</button>
+        <button class="hero-btn" onclick="navigate('detail',{type:'movie',id:${hero.id}})">â¶ï¸ Watch Now</button>
       </div>
     </div>`;
   const sections=[
-    {title:'🔥 Trending Now',  data:trending.results},
-    {title:'⭐️ Top Rated',     data:topRated.results},
-    {title:'📺 Popular',      data:popular.results},
-    {title:'🎬 Now Playing',  data:nowPlaying.results},
+    {title:'ð¥ Trending Now',  data:trending.results},
+    {title:'â­ï¸ Top Rated',     data:topRated.results},
+    {title:'ðº Popular',      data:popular.results},
+    {title:'ð¬ Now Playing',  data:nowPlaying.results},
   ];
   for(const s of sections){
     html+=`<h2 class="section-title">${s.title}</h2><div class="movie-row">`;
@@ -150,7 +150,7 @@ async function renderDetail(type,id){
     const title=d.title||d.name||'';
     const yr=(d.release_date||d.first_air_date||'').slice(0,4);
     const genres=d.genres||[];
-    const runtime=d.runtime?`${d.runtime} min`:(d.episode_run_time?.[0]?`${d.episode_run_time[0]} min`:'—');
+    const runtime=d.runtime?`${d.runtime} min`:(d.episode_run_time?.[0]?`${d.episode_run_time[0]} min`:'â');
     const rating=d.vote_average?.toFixed(1)||'N/A';
     const overview=d.overview||'No overview available.';
     const tagline=d.tagline||'';
@@ -164,11 +164,11 @@ async function renderDetail(type,id){
             <div class="detail-info">
               <h1 class="detail-title">${title}</h1>
               ${tagline?`<p class="detail-tagline">${tagline}</p>`:''}
-              <div class="detail-meta"><span>${yr}</span><span>${runtime}</span><span>★ ${rating}</span></div>
+              <div class="detail-meta"><span>${yr}</span><span>${runtime}</span><span>â ${rating}</span></div>
               <div class="detail-meta">${genres.map(g=>`<span class="genre-pill">${g.name}</span>`).join('')}</div>
-              ${trailer?`<a href="https://youtube.com/watch?v=${trailer.key}" target="_blank" class="btn-secondary" style="margin:8px 0;width:fit-content">▶️ Watch Trailer</a>`:''}
+              ${trailer?`<a href="https://youtube.com/watch?v=${trailer.key}" target="_blank" class="btn-secondary" style="margin:8px 0;width:fit-content">â¶ï¸ Watch Trailer</a>`:''}
               <div class="watch-section">
-                <button class="watch-btn" onclick="navigate('watch',{type:'${type}',id:${id}})">▶️ Watch Now</button>
+                <button class="watch-btn" onclick="navigate('watch',{type:'${type}',id:${id}})">â¶ï¸ Watch Now</button>
                 ${EMBED_SRCS.map((s,i)=>`<button class="server-btn" onclick="navigate('watch',{type:'${type}',id:${id},src:${i}})">${s.label}</button>`).join('')}
               </div>
               <p class="detail-overview" style="margin-top:16px">${overview}</p>
@@ -184,7 +184,7 @@ async function renderDetail(type,id){
         </div>
       </div>`;
     root.innerHTML=html;
-  }catch(e){root.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text-muted)">⚠️ Failed to load details.</div>`}
+  }catch(e){root.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text-muted)">â ï¸ Failed to load details.</div>`}
 }
 
 function renderWatch(type,id,srcIdx=0){
@@ -194,7 +194,7 @@ function renderWatch(type,id,srcIdx=0){
   let html=`
     <div class="watch-page">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-        <button class="btn-secondary" onclick="navigate('detail',{type:'${type}',id:${id}})">← Back</button>
+        <button class="btn-secondary" onclick="navigate('detail',{type:'${type}',id:${id}})">â Back</button>
         <span style="font-weight:600;font-size:1rem">${src.label}</span>
       </div>
       <div class="watch-player-wrap">
