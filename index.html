@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>CineVerse - Your Movie Universe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fuzzy@0.1.3/lib/fuzzy.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+
+  <!-- ================================================================ -->
+  <!-- AD NETWORKS — Replace ZONE_ID/URL below with your real ad codes  -->
+  <!-- Sign up at PropellerAds, Adsterra, PopAds, or similar to get yours -->
+  <!-- ================================================================ -->
+
+  <!-- 1) PropellerAds Popunder (loads in background, opens new tab) -->
+  <script type="text/javascript">
+    var _paq = _paq || [];
+    _paq.push(["setZone", "YOUR_PROPELERADS_ZONE_ID"]);
+    _paq.push(["setVisitor", "visitor_id"]);
+    (function() {
+      var u = "//YOUR_PROPELERADS_DOMAIN.com/";
+      _paq.push(["setTrackerUrl", u + "track.php"]);
+      _paq.push(["setSiteId", "YOUR_SITE_ID"]);
+      var d = document, g = d.createElement("script"), s = d.getElementsByTagName("script")[0];
+      g.type = "text/javascript"; g.async = true; g.defer = true;
+      g.src = u + "pop.js";
+      s.parentNode.insertBefore(g, s);
+    })();
+  </script>
+
+  <!-- 2) Adsterra Banner (responsive, works on mobile & desktop) -->
+  <script type="text/javascript">
+    (function(){
+      var s = document.createElement('script');
+      s.src = '//YOUR_ADSTERRA_BANNER_ZONE.com/afu.php?zoneid=YOUR_ZONE_ID';
+      s.async = true;
+      s.setAttribute('data-cfasync', 'false');
+      document.head.appendChild(s);
+    })();
+  </script>
+
+  <!-- 3) PopAds Popunder (backup, fires if PropellerAds misses) -->
+  <script type="text/javascript">
+    var _pop = _pop || [];
+    _pop.push(['siteId', YOUR_POPADS_SITE_ID]);
+    _pop.push(['minBid', 0.0000001]);
+    _pop.push(['popundersPerIP', 0]);
+    _pop.push(['delayBetween', 0]);
+    _pop.push(['default', false]);
+    _pop.push(['defaultPerDay', 0]);
+    _pop.push(['topmostLayer', true]);
+    (function() {
+      var s = document.createElement('script'); s.type = 'text/javascript';
+      s.src = '//YOUR_POPADS_DOMAIN.com/c.js';
+      s.async = true;
+      document.getElementsByTagName('head')[0].appendChild(s);
+    })();
+  </script>
+
+  <!-- 4) Adsterra Social Bar (sticky banner at bottom, high RPM) -->
+  <script type="text/javascript">
+    (function(){
+      var s = document.createElement('script');
+      s.src = '//YOUR_ADSTERRA_SOCIALBAR_ZONE.com/afu.php?zoneid=YOUR_SOCIALBAR_ZONE';
+      s.async = true;
+      s.setAttribute('data-cfasync', 'false');
+      document.head.appendChild(s);
+    })();
+  </script>
+
+  <script src="./script.js" defer></script>
+</head>
+<body>
+<div id="toast-container" class="fixed top-20 right-4 z-[600] flex flex-col gap-2"></div>
+
+<div id="auth-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <button id="auth-close-btn" type="button" class="absolute top-3 right-3 text-gray-400 hover:text-white text-xl">✕</button>
+    <div class="flex items-center gap-2 mb-4">
+      <div class="w-7 h-7 bg-red-600 rounded-md flex items-center justify-center"><i data-lucide="clapperboard" class="w-3.5 h-3.5 text-white"></i></div>
+      <span class="text-lg font-extrabold tracking-tight">CINEVERSE</span>
+    </div>
+    <div class="flex gap-2 mb-4 border-b border-white/10">
+      <button type="button" class="auth-tab-btn active" id="tab-signin-btn">Sign In</button>
+      <button type="button" class="auth-tab-btn" id="tab-signup-btn">Create Account</button>
+    </div>
+    <div id="signin-form" class="auth-form">
+      <input class="form-input" id="si-email" type="email" placeholder="Email address">
+      <input class="form-input" id="si-password" type="password" placeholder="Password">
+      <div id="si-error" class="text-red-400 text-xs hidden"></div>
+      <button type="button" id="signin-submit-btn" class="btn-primary justify-center w-full">Sign In</button>
+    </div>
+    <div id="signup-form" class="auth-form" style="display:none">
+      <input class="form-input" id="su-name" placeholder="Full name">
+      <input class="form-input" id="su-email" type="email" placeholder="Email address">
+      <input class="form-input" id="su-password" type="password" placeholder="Password (min 6)">
+      <input class="form-input" id="su-confirm" type="password" placeholder="Confirm password">
+      <div id="su-error" class="text-red-400 text-xs hidden"></div>
+      <button type="button" id="signup-submit-btn" class="btn-primary justify-center w-full">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<div id="profile-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:460px">
+    <button id="profile-close-btn" type="button" class="absolute top-3 right-3 text-gray-400 hover:text-white">✕</button>
+    <h3 class="text-xl font-bold mb-4">My Account</h3>
+    <div id="profile-content"></div>
+  </div>
+</div>
+
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-[150] transition-all duration-300 bg-gradient-to-b from-black/95 to-transparent">
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8">
+    <div class="flex items-center justify-between h-16 md:h-[66px]">
+      <div class="flex items-center gap-4">
+        <a href="#" onclick="navigate('home'); return false;" class="flex items-center gap-2">
+          <div class="w-7 h-7 bg-red-600 rounded-md flex items-center justify-center"><i data-lucide="clapperboard" class="w-3.5 h-3.5 text-white"></i></div>
+          <span class="brand-wordmark text-white hidden sm:block">CINEVERSE</span>
+        </a>
+        <div class="hidden lg:flex items-center gap-1">
+          <button type="button" onclick="navigate('home')" data-nav="home" class="nav-btn active">Home</button>
+          <button type="button" onclick="navigate('movies')" data-nav="movies" class="nav-btn">Movies</button>
+          <button type="button" onclick="navigate('tvshows')" data-nav="tvshows" class="nav-btn">TV Shows</button>
+          <div class="relative">
+            <button type="button" id="genresBtn" class="nav-btn">Genres <i data-lucide="chevron-down" class="w-3.5 h-3.5 inline"></i></button>
+            <div id="genresDropdown" class="genres-dropdown">
+              <a onclick="navigateGenre(28,'Action')">Action</a>
+              <a onclick="navigateGenre(12,'Adventure')">Adventure</a>
+              <a onclick="navigateGenre(16,'Animation')">Animation</a>
+              <a onclick="navigateGenre(35,'Comedy')">Comedy</a>
+              <a onclick="navigateGenre(80,'Crime')">Crime</a>
+              <a onclick="navigateGenre(99,'Documentary')">Documentary</a>
+              <a onclick="navigateGenre(18,'Drama')">Drama</a>
+              <a onclick="navigateGenre(10751,'Family')">Family</a>
+              <a onclick="navigateGenre(14,'Fantasy')">Fantasy</a>
+              <a onclick="navigateGenre(10768,'Foreign')">Foreign</a>
+              <a onclick="navigateGenre(36,'History')">History</a>
+              <a onclick="navigateGenre(27,'Horror')">Horror</a>
+              <a onclick="navigateGenre(10402,'Music')">Music</a>
+              <a onclick="navigateGenre(9648,'Mystery')">Mystery</a>
+              <a onclick="navigateGenre(10749,'Romance')">Romance</a>
+              <a onclick="navigateGenre(878,'Science Fiction')">Sci-Fi</a>
+              <a onclick="navigateGenre(53,'Thriller')">Thriller</a>
+              <a onclick="navigateGenre(10752,'War')">War</a>
+              <a onclick="navigateGenre(37,'Western')">Western</a>
+              <a onclick="navigateGenre('adult','Adult')">Adult</a>
+            </div>
+          </div>
+          <button type="button" onclick="navigate('mylist')" data-nav="mylist" class="nav-btn">My List</button>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="flex items-center bg-white/8 border border-white/10 rounded-full px-3 py-1.5">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-gray-400"></i>
+          <input type="text" id="global-search" placeholder="Search..." class="bg-transparent outline-none text-white text-sm w-28 focus:w-44 transition-all px-2">
+        </div>
+        <div id="guest-btns" class="flex gap-2">
+          <button type="button" id="open-signup-btn" class="text-sm px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 hidden sm:block">Sign Up</button>
+          <button type="button" id="open-signin-btn" class="text-sm px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700">Sign In</button>
+        </div>
+        <div id="user-section" class="relative" style="display:none">
+          <button type="button" id="user-avatar-btn" class="flex items-center gap-1">
+            <div id="user-avatar" class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-red-600">U</div>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400"></i>
+          </button>
+          <div id="user-menu" class="user-menu" style="display:none">
+            <div class="px-3 py-2 border-b border-white/10">
+              <div id="menu-user-name" class="font-semibold text-sm"></div>
+              <div id="menu-user-email" class="text-xs text-gray-500"></div>
+            </div>
+            <button type="button" class="user-menu-item" onclick="navigate('mylist'); closeUserMenu()"><i data-lucide="bookmark" class="w-4 h-4 text-red-500"></i>My List</button>
+            <button type="button" class="user-menu-item" onclick="openProfile(); closeUserMenu()"><i data-lucide="user" class="w-4 h-4"></i>My Account</button>
+            <button type="button" class="user-menu-item" onclick="doSignOut()"><i data-lucide="log-out" class="w-4 h-4"></i>Sign Out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main id="app-root" class="min-h-screen pt-16 md:pt-[68px]"></main>
+<footer class="border-t border-gray-800/60 bg-black/50 mt-12 py-6 text-center text-gray-500 text-xs">CineVerse 2025 - Powered by TMDB</footer>
+</body>
+</html>
