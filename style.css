@@ -319,3 +319,48 @@ input,textarea{font:inherit;color:inherit}
   .movie-grid,.list-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
   .detail-poster{width:110px}
 }
+
+/* --- 5a: Movie Card Overlay Styles --- */
+.movie-card {
+  position: relative;
+  overflow: hidden;
+}
+.card-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(229, 9, 20, 0.9);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  z-index: 2;
+}
+.card-watchlist-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.movie-card:hover .card-watchlist-btn {
+  opacity: 1;
+}
+.card-watchlist-btn:hover {
+  background: rgba(229, 9, 20, 0.8);
+  border-color: #e50914;
+}
