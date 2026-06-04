@@ -102,7 +102,9 @@ function movieCard(m){
   const id=m.id; const type=m.media_type||'movie';
   const yr=(m.release_date||m.first_air_date||'').slice(0,4);
   return `<div class="movie-card" onclick="navigate('detail',{type:'${type}',id:${id}})">
+    <div class="card-badge">${m.vote_average?.toFixed(1)||''}</div>
     <img class="movie-poster" src="${p}" alt="${t}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22450%22 fill=%22%231a1a24%22><rect width=%22300%22 height=%22450%22/></svg>'">
+    <button class="card-watchlist-btn" onclick="event.stopPropagation();addToWatchlist({id:${id},title:'${t.replace(/'/g,"\\'")}',type:'${type}',poster:'${p}'})">+</button>
     <div class="movie-info"><div class="movie-title">${t}</div><div class="movie-sub"><span>${yr}</span></div></div>
   </div>`;
 }
@@ -285,6 +287,17 @@ async function renderActor(id){
       <div class="movie-row" style="margin-top:8px">${known.map(m=>movieCard({...m,media_type:'movie'})).join('')}</div>`:''}`;
     root.innerHTML=html;
   }catch(e){root.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text-muted)">Failed to load actor.</div>`}
+}
+
+function addToWatchlist(item){
+  const u=getAuth();
+  if(!u){openModal('auth-modal');return}
+  const list=JSON.parse(localStorage.getItem('cineverse_mylist')||'{}');
+  if(!list['watching'])list['watching']=[];
+  if(list['watching'].find(i=>i.id===item.id)){toast('Already in your list.');return}
+  list['watching'].push(item);
+  localStorage.setItem('cineverse_mylist',JSON.stringify(list));
+  toast('Added to Watchlist!');
 }
 
 document.addEventListener('DOMContentLoaded',function(){
