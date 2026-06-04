@@ -4,131 +4,184 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="monetag" content="0068671ba8e3e7bcae52f505fca97304">
-<script src="https://quge5.com/88/tag.min.js" data-zone="245765" async data-cfasync="false"></script>
-  <title>CineVerse - Your Movie Universe</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fuzzy@0.1.3/lib/fuzzy.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <script src="https://quge5.com/88/tag.min.js" data-zone="245765" async data-cfasync="false"></script>
+  <title>CineVerse - Stream Movies & TV Shows Online Free</title>
+  <meta name="description" content="Watch free movies and TV shows online in HD. Stream the latest releases, trending content, and classics.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="./style.css">
   <script>window.TMDB_API_KEY = "5e2176b3af584e2047c93f889e185eca";</script>
-  <script src="./script.js" defer></script>
 </head>
 <body>
-<div id="toast-container" class="fixed top-20 right-4 z-[600] flex flex-col gap-2"></div>
 
+<div id="toast-container"></div>
+
+<!-- Auth Modal -->
 <div id="auth-modal" class="modal-overlay" style="display:none">
-  <div class="modal-box">
-    <button id="auth-close-btn" type="button" class="absolute top-3 right-3 text-gray-400 hover:text-white text-xl">&times;</button>
-    <div class="flex items-center gap-2 mb-4">
-      <div class="w-7 h-7 bg-red-600 rounded-md flex items-center justify-center"><i data-lucide="clapperboard" class="w-3.5 h-3.5 text-white"></i></div>
-      <span class="text-lg font-extrabold tracking-tight">CINEVERSE</span>
+  <div class="modal-box auth-modal">
+    <button id="auth-close-btn" class="modal-close"><i class="fas fa-times"></i></button>
+    <div class="modal-header">
+      <div class="logo-icon"><i class="fas fa-film"></i></div>
+      <h2>Welcome to CineVerse</h2>
     </div>
-    <div class="flex gap-2 mb-4 border-b border-white/10">
-      <button type="button" class="auth-tab-btn active" id="tab-signin-btn">Sign In</button>
-      <button type="button" class="auth-tab-btn" id="tab-signup-btn">Create Account</button>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="signin">Sign In</button>
+      <button class="auth-tab" data-tab="signup">Create Account</button>
     </div>
     <div id="signin-form" class="auth-form">
       <input class="form-input" id="si-email" type="email" placeholder="Email address">
       <input class="form-input" id="si-password" type="password" placeholder="Password">
-      <div id="si-error" class="text-red-400 text-xs hidden"></div>
-      <button type="button" id="signin-submit-btn" class="btn-primary justify-center w-full">Sign In</button>
+      <div id="si-error" class="error-msg"></div>
+      <button id="signin-submit-btn" class="btn-primary btn-block">Sign In</button>
     </div>
     <div id="signup-form" class="auth-form" style="display:none">
       <input class="form-input" id="su-name" placeholder="Full name">
       <input class="form-input" id="su-email" type="email" placeholder="Email address">
-      <input class="form-input" id="su-password" type="password" placeholder="Password (min 6)">
+      <input class="form-input" id="su-password" type="password" placeholder="Password (min 6 characters)">
       <input class="form-input" id="su-confirm" type="password" placeholder="Confirm password">
-      <div id="su-error" class="text-red-400 text-xs hidden"></div>
-      <button type="button" id="signup-submit-btn" class="btn-primary justify-center w-full">Create Account</button>
+      <div id="su-error" class="error-msg"></div>
+      <button id="signup-submit-btn" class="btn-primary btn-block">Create Account</button>
     </div>
   </div>
 </div>
 
+<!-- Profile Modal -->
 <div id="profile-modal" class="modal-overlay" style="display:none">
-  <div class="modal-box" style="max-width:460px">
-    <button id="profile-close-btn" type="button" class="absolute top-3 right-3 text-gray-400 hover:text-white">&times;</button>
-    <h3 class="text-xl font-bold mb-4">My Account</h3>
+  <div class="modal-box">
+    <button id="profile-close-btn" class="modal-close"><i class="fas fa-times"></i></button>
+    <h3 class="modal-title">My Profile</h3>
     <div id="profile-content"></div>
   </div>
 </div>
 
-<nav id="navbar" class="fixed top-0 left-0 right-0 z-[150] transition-all duration-300 bg-black/90 backdrop-blur-md border-b border-white/[0.04]">
-  <div class="max-w-[1400px] mx-auto px-4 md:px-8">
-    <div class="flex items-center justify-between h-14 md:h-[60px]">
-      <div class="flex items-center gap-6">
-        <a href="#" onclick="navigate('home'); return false;" class="flex items-center">
-          <span class="text-lg font-extrabold tracking-wider text-white">CINEVERSE</span>
-        </a>
-        <div class="hidden lg:flex items-center gap-[2px]">
-          <button type="button" onclick="navigate('home')" data-nav="home" class="nav-btn active">Home</button>
-          <button type="button" onclick="navigate('movies')" data-nav="movies" class="nav-btn">Movies</button>
-          <button type="button" onclick="navigate('tvshows')" data-nav="tvshows" class="nav-btn">TV Shows</button>
-          <button type="button" onclick="navigate('trending')" data-nav="trending" class="nav-btn">Trending</button>
-          <button type="button" onclick="navigate('mylist')" data-nav="mylist" class="nav-btn">Watchlist</button>
-          <div class="relative">
-            <button type="button" id="genresBtn" class="nav-btn">Categories <i data-lucide="chevron-down" class="w-3 h-3 inline"></i></button>
-            <div id="genresDropdown" class="genres-dropdown">
-              <a onclick="navigateGenre(28,'Action')">Action</a>
-              <a onclick="navigateGenre(12,'Adventure')">Adventure</a>
-              <a onclick="navigateGenre(16,'Animation')">Animation</a>
-              <a onclick="navigateGenre(35,'Comedy')">Comedy</a>
-              <a onclick="navigateGenre(80,'Crime')">Crime</a>
-              <a onclick="navigateGenre(99,'Documentary')">Documentary</a>
-              <a onclick="navigateGenre(18,'Drama')">Drama</a>
-              <a onclick="navigateGenre(10751,'Family')">Family</a>
-              <a onclick="navigateGenre(14,'Fantasy')">Fantasy</a>
-              <a onclick="navigateGenre(10768,'Foreign')">Foreign</a>
-              <a onclick="navigateGenre(36,'History')">History</a>
-              <a onclick="navigateGenre(27,'Horror')">Horror</a>
-              <a onclick="navigateGenre(10402,'Music')">Music</a>
-              <a onclick="navigateGenre(9648,'Mystery')">Mystery</a>
-              <a onclick="navigateGenre(10749,'Romance')">Romance</a>
-              <a onclick="navigateGenre(878,'Science Fiction')">Sci-Fi</a>
-              <a onclick="navigateGenre(53,'Thriller')">Thriller</a>
-              <a onclick="navigateGenre(10752,'War')">War</a>
-              <a onclick="navigateGenre(37,'Western')">Western</a>
-              <a onclick="navigateGenre('adult','Adult')">Adult</a>
-            </div>
+<!-- Navbar -->
+<nav id="navbar">
+  <div class="navbar-container">
+    <div class="navbar-left">
+      <a href="#" onclick="navigate('home'); return false;" class="logo">
+        <i class="fas fa-film"></i>
+        <span class="logo-text">CINEVERSE</span>
+      </a>
+      <div class="nav-links">
+        <a href="#" onclick="navigate('home'); return false;" data-nav="home" class="nav-link active">Home</a>
+        <a href="#" onclick="navigate('movies'); return false;" data-nav="movies" class="nav-link">Movies</a>
+        <a href="#" onclick="navigate('tvshows'); return false;" data-nav="tvshows" class="nav-link">TV Shows</a>
+        <a href="#" onclick="navigate('trending'); return false;" data-nav="trending" class="nav-link">Trending</a>
+        <div class="dropdown">
+          <button class="nav-link dropdown-btn" id="genresBtn">
+            Categories <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="dropdown-menu" id="genresDropdown">
+            <a onclick="navigateGenre(28,'Action')">Action</a>
+            <a onclick="navigateGenre(12,'Adventure')">Adventure</a>
+            <a onclick="navigateGenre(16,'Animation')">Animation</a>
+            <a onclick="navigateGenre(35,'Comedy')">Comedy</a>
+            <a onclick="navigateGenre(80,'Crime')">Crime</a>
+            <a onclick="navigateGenre(99,'Documentary')">Documentary</a>
+            <a onclick="navigateGenre(18,'Drama')">Drama</a>
+            <a onclick="navigateGenre(10751,'Family')">Family</a>
+            <a onclick="navigateGenre(14,'Fantasy')">Fantasy</a>
+            <a onclick="navigateGenre(36,'History')">History</a>
+            <a onclick="navigateGenre(27,'Horror')">Horror</a>
+            <a onclick="navigateGenre(10402,'Music')">Music</a>
+            <a onclick="navigateGenre(9648,'Mystery')">Mystery</a>
+            <a onclick="navigateGenre(10749,'Romance')">Romance</a>
+            <a onclick="navigateGenre(878,'Science Fiction')">Sci-Fi</a>
+            <a onclick="navigateGenre(53,'Thriller')">Thriller</a>
+            <a onclick="navigateGenre(10752,'War')">War</a>
+            <a onclick="navigateGenre(37,'Western')">Western</a>
           </div>
         </div>
       </div>
-      <div class="flex items-center gap-3">
-        <button type="button" onclick="document.getElementById('global-search').focus()" class="p-1.5 rounded-full hover:bg-white/10 transition-colors">
-          <i data-lucide="search" class="w-4 h-4 text-gray-400"></i>
+    </div>
+    <div class="navbar-right">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="global-search" placeholder="Search movies, TV shows...">
+      </div>
+      <div id="guest-btns">
+        <button id="open-signin-btn" class="btn-signin">Sign In</button>
+      </div>
+      <div id="user-section" class="user-menu-wrap" style="display:none">
+        <button id="user-avatar-btn" class="user-avatar">
+          <span id="user-avatar-text">U</span>
         </button>
-        <input type="text" id="global-search" placeholder="Search..." class="hidden bg-white/8 border border-white/10 rounded-full px-3 py-1.5 text-white text-sm w-28 outline-none">
-        <div id="guest-btns" class="flex gap-2">
-          <button type="button" id="open-signin-btn" class="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium">Sign In</button>
-        </div>
-        <div id="user-section" class="relative" style="display:none">
-          <button type="button" id="user-avatar-btn" class="flex items-center gap-1">
-            <div id="user-avatar" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-red-600">U</div>
-          </button>
-          <div id="user-menu" class="user-menu" style="display:none">
-            <div class="px-3 py-2 border-b border-white/10">
-              <div id="menu-user-name" class="font-semibold text-sm"></div>
-              <div id="menu-user-email" class="text-xs text-gray-500"></div>
-            </div>
-            <button type="button" class="user-menu-item" onclick="navigate('mylist'); closeUserMenu()"><i data-lucide="bookmark" class="w-4 h-4 text-red-500"></i>Watchlist</button>
-            <button type="button" class="user-menu-item" onclick="openProfile(); closeUserMenu()"><i data-lucide="user" class="w-4 h-4"></i>My Account</button>
-            <button type="button" class="user-menu-item" onclick="doSignOut()"><i data-lucide="log-out" class="w-4 h-4"></i>Sign Out</button>
+        <div id="user-menu" class="user-dropdown">
+          <div class="user-info">
+            <div id="menu-user-name" class="user-name"></div>
+            <div id="menu-user-email" class="user-email"></div>
           </div>
+          <div class="user-menu-divider"></div>
+          <a href="#" class="user-menu-item" onclick="navigate('mylist'); closeUserMenu(); return false;">
+            <i class="fas fa-bookmark"></i> Watchlist
+          </a>
+          <a href="#" class="user-menu-item" onclick="openProfile(); closeUserMenu(); return false;">
+            <i class="fas fa-user"></i> My Account
+          </a>
+          <div class="user-menu-divider"></div>
+          <a href="#" class="user-menu-item" onclick="doSignOut(); return false;">
+            <i class="fas fa-sign-out-alt"></i> Sign Out
+          </a>
         </div>
       </div>
     </div>
   </div>
 </nav>
 
-<main id="app-root" class="min-h-screen pt-16 md:pt-[68px]"></main>
-<footer class="border-t border-gray-800/60 bg-black/50 mt-12 py-6 text-center text-gray-500 text-xs">CineVerse 2025 - Powered by TMDB</footer>
+<main id="app-root"></main>
+
+<footer class="footer">
+  <div class="footer-container">
+    <div class="footer-content">
+      <div class="footer-section">
+        <div class="footer-logo">
+          <i class="fas fa-film"></i>
+          <span>CINEVERSE</span>
+        </div>
+        <p class="footer-desc">Your ultimate destination for streaming movies and TV shows online. Watch the latest releases in HD quality.</p>
+      </div>
+      <div class="footer-section">
+        <h4>Browse</h4>
+        <a href="#" onclick="navigate('movies'); return false;">Movies</a>
+        <a href="#" onclick="navigate('tvshows'); return false;">TV Shows</a>
+        <a href="#" onclick="navigate('trending'); return false;">Trending</a>
+        <a href="#" onclick="navigate('mylist'); return false;">My Watchlist</a>
+      </div>
+      <div class="footer-section">
+        <h4>Categories</h4>
+        <a href="#" onclick="navigateGenre(28,'Action'); return false;">Action</a>
+        <a href="#" onclick="navigateGenre(35,'Comedy'); return false;">Comedy</a>
+        <a href="#" onclick="navigateGenre(18,'Drama'); return false;">Drama</a>
+        <a href="#" onclick="navigateGenre(27,'Horror'); return false;">Horror</a>
+      </div>
+      <div class="footer-section">
+        <h4>Follow Us</h4>
+        <div class="social-links">
+          <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
+          <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+          <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+          <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 CineVerse. All rights reserved. Powered by TMDB.</p>
+    </div>
+  </div>
+</footer>
 
 <!-- Monetag Popunder -->
 <script type="text/javascript" data-cfasync="false">
-(function(u) { var d = document, s = d.createElement('script');
-s.src = u; s.async = true;
-d.head.appendChild(s);
+(function(u) { 
+  var d = document, s = d.createElement('script');
+  s.src = u; 
+  s.async = true;
+  d.head.appendChild(s);
 })('//monetag.info/page/popunder/0068671ba8e3e7bcae52f505fca97304.js');
 </script>
+
+<script src="./script.js"></script>
 </body>
 </html>
