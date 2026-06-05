@@ -9,7 +9,7 @@
   <meta name="description" content="Watch free movies and TV shows online in HD. Stream the latest releases, trending content, and classics.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&family=Crimson+Text:ital@0;1&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="./style.css">
   <script>window.TMDB_API_KEY = "5e2176b3af584e2047c93f889e185eca";</script>
@@ -56,121 +56,164 @@
   </div>
 </div>
 
-<!-- Navbar -->
-<nav id="navbar">
-  <div class="navbar-container">
-    <div class="navbar-left">
-      <a href="#" onclick="navigate('home'); return false;" class="logo">
-        <i class="fas fa-film"></i>
-        <span class="logo-text">CINEVERSE</span>
+<!-- DESKTOP NAVBAR -->
+<nav id="navbar-desktop" class="navbar-desktop">
+  <div class="navbar-desktop-container">
+    <div class="navbar-desktop-left">
+      <a href="#" onclick="navigate('home'); return false;" class="logo-desktop">
+        <span class="logo-desktop-text">CINEVERSE</span>
       </a>
-      <div class="nav-links">
-        <a href="#" onclick="navigate('home'); return false;" data-nav="home" class="nav-link active">Home</a>
-        <a href="#" onclick="navigate('movies'); return false;" data-nav="movies" class="nav-link">Movies</a>
-        <a href="#" onclick="navigate('tvshows'); return false;" data-nav="tvshows" class="nav-link">TV Shows</a>
-        <a href="#" onclick="navigate('trending'); return false;" data-nav="trending" class="nav-link">Trending</a>
-        <div class="dropdown">
-          <button class="nav-link dropdown-btn" id="genresBtn">
+      <div class="nav-links-desktop">
+        <a href="#" onclick="navigate('home'); return false;" class="nav-link-desktop" data-page="home">Home</a>
+        <a href="#" onclick="navigate('movies'); return false;" class="nav-link-desktop" data-page="movies">Movies</a>
+        <a href="#" onclick="navigate('tvshows'); return false;" class="nav-link-desktop" data-page="tvshows">TV Shows</a>
+        <a href="#" onclick="navigate('trending'); return false;" class="nav-link-desktop" data-page="trending">Trending</a>
+        <a href="#" onclick="navigate('mylist'); return false;" class="nav-link-desktop" data-page="mylist">Watchlist</a>
+        <div class="nav-dropdown-desktop">
+          <button class="nav-link-desktop" id="categories-btn-desktop">
             Categories <i class="fas fa-chevron-down"></i>
           </button>
-          <div class="dropdown-menu" id="genresDropdown">
-            <a onclick="navigateGenre(28,'Action')">Action</a>
-            <a onclick="navigateGenre(12,'Adventure')">Adventure</a>
-            <a onclick="navigateGenre(16,'Animation')">Animation</a>
-            <a onclick="navigateGenre(35,'Comedy')">Comedy</a>
-            <a onclick="navigateGenre(80,'Crime')">Crime</a>
-            <a onclick="navigateGenre(99,'Documentary')">Documentary</a>
-            <a onclick="navigateGenre(18,'Drama')">Drama</a>
-            <a onclick="navigateGenre(10751,'Family')">Family</a>
-            <a onclick="navigateGenre(14,'Fantasy')">Fantasy</a>
-            <a onclick="navigateGenre(36,'History')">History</a>
-            <a onclick="navigateGenre(27,'Horror')">Horror</a>
-            <a onclick="navigateGenre(10402,'Music')">Music</a>
-            <a onclick="navigateGenre(9648,'Mystery')">Mystery</a>
-            <a onclick="navigateGenre(10749,'Romance')">Romance</a>
-            <a onclick="navigateGenre(878,'Science Fiction')">Sci-Fi</a>
-            <a onclick="navigateGenre(53,'Thriller')">Thriller</a>
-            <a onclick="navigateGenre(10752,'War')">War</a>
-            <a onclick="navigateGenre(37,'Western')">Western</a>
+          <div class="nav-dropdown-menu-desktop" id="categories-menu-desktop">
+            <a onclick="navigateGenre(28,'Action')"><i class="fas fa-bolt"></i><span>Action</span></a>
+            <a onclick="navigateGenre(35,'Comedy')"><i class="fas fa-laugh"></i><span>Comedy</span></a>
+            <a onclick="navigateDramaSubcategory('all','Drama')"><i class="fas fa-masks-theater"></i><span>Drama</span></a>
+            <a onclick="navigateDramaSubcategory('kdrama','K-Drama')"><i class="fas fa-heart"></i><span>K-Drama</span></a>
+            <a onclick="navigateDramaSubcategory('jdrama','J-Drama')"><i class="fas fa-torii-gate"></i><span>J-Drama</span></a>
+            <a onclick="navigateDramaSubcategory('thdrama','Thai Drama')"><i class="fas fa-location-dot"></i><span>Thai Drama</span></a>
+            <a onclick="navigateDramaSubcategory('anime','Anime')"><i class="fas fa-star"></i><span>Anime</span></a>
+            <a onclick="navigateGenre(27,'Horror')"><i class="fas fa-moon"></i><span>Horror</span></a>
+            <a onclick="navigateGenre(878,'Sci-Fi')"><i class="fas fa-rocket"></i><span>Sci-Fi</span></a>
+            <a onclick="navigateGenre(53,'Thriller')"><i class="fas fa-skull"></i><span>Thriller</span></a>
           </div>
         </div>
       </div>
     </div>
-    <div class="navbar-right">
-      <div class="search-box">
+    <div class="navbar-desktop-right">
+      <div id="expandable-search-desktop" class="expandable-search-navbar" style="display:none">
+        <input type="text" id="search-input-navbar-desktop" class="search-input-navbar" placeholder="Search..." onkeypress="if(event.key==='Enter') performSearch(this.value)">
+        <button class="search-close-navbar" onclick="closeSearchModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <button id="search-btn-desktop" class="navbar-desktop-icon-btn" onclick="openSearchModal()">
         <i class="fas fa-search"></i>
-        <input type="text" id="global-search" placeholder="Search movies, TV shows...">
-      </div>
-      <div id="guest-btns">
-        <button id="open-signin-btn" class="btn-signin">Sign In</button>
-      </div>
-      <div id="user-section" class="user-menu-wrap" style="display:none">
-        <button id="user-avatar-btn" class="user-avatar">
-          <span id="user-avatar-text">U</span>
-        </button>
-        <div id="user-menu" class="user-dropdown">
-          <div class="user-info">
-            <div id="menu-user-name" class="user-name"></div>
-            <div id="menu-user-email" class="user-email"></div>
-          </div>
-          <div class="user-menu-divider"></div>
-          <a href="#" class="user-menu-item" onclick="navigate('mylist'); closeUserMenu(); return false;">
-            <i class="fas fa-bookmark"></i> Watchlist
-          </a>
-          <a href="#" class="user-menu-item" onclick="openProfile(); closeUserMenu(); return false;">
-            <i class="fas fa-user"></i> My Account
-          </a>
-          <div class="user-menu-divider"></div>
-          <a href="#" class="user-menu-item" onclick="doSignOut(); return false;">
-            <i class="fas fa-sign-out-alt"></i> Sign Out
-          </a>
-        </div>
+      </button>
+      <button id="notifications-btn-desktop" class="navbar-desktop-icon-btn">
+        <i class="fas fa-bell"></i>
+        <span class="notification-badge" style="display:none">1</span>
+      </button>
+      <button id="profile-btn-desktop" class="navbar-desktop-icon-btn" onclick="toggleProfileDropdown()">
+        <i class="fas fa-user-circle"></i>
+      </button>
+      <div id="profile-dropdown-desktop" class="profile-dropdown-desktop" style="display:none">
+        <div id="profile-dropdown-content-desktop"></div>
       </div>
     </div>
   </div>
 </nav>
 
-<main id="app-root"></main>
-
-<footer class="footer">
-  <div class="footer-container">
-    <div class="footer-content">
-      <div class="footer-section">
-        <div class="footer-logo">
-          <i class="fas fa-film"></i>
-          <span>CINEVERSE</span>
-        </div>
-        <p class="footer-desc">Your ultimate destination for streaming movies and TV shows online. Watch the latest releases in HD quality.</p>
-      </div>
-      <div class="footer-section">
-        <h4>Browse</h4>
-        <a href="#" onclick="navigate('movies'); return false;">Movies</a>
-        <a href="#" onclick="navigate('tvshows'); return false;">TV Shows</a>
-        <a href="#" onclick="navigate('trending'); return false;">Trending</a>
-        <a href="#" onclick="navigate('mylist'); return false;">My Watchlist</a>
-      </div>
-      <div class="footer-section">
-        <h4>Categories</h4>
-        <a href="#" onclick="navigateGenre(28,'Action'); return false;">Action</a>
-        <a href="#" onclick="navigateGenre(35,'Comedy'); return false;">Comedy</a>
-        <a href="#" onclick="navigateGenre(18,'Drama'); return false;">Drama</a>
-        <a href="#" onclick="navigateGenre(27,'Horror'); return false;">Horror</a>
-      </div>
-      <div class="footer-section">
-        <h4>Follow Us</h4>
-        <div class="social-links">
-          <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
-          <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
-          <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
-          <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
-        </div>
-      </div>
+<!-- MOBILE NAVBAR (Minimalist) -->
+<nav id="navbar-mobile" class="navbar-mobile">
+  <div class="navbar-mobile-container">
+    <div class="navbar-brand-mobile">
+      <a href="#" onclick="navigate('home'); return false;" class="logo-mobile">
+        <span class="logo-text-mobile">CINEVERSE</span>
+      </a>
     </div>
-    <div class="footer-bottom">
-      <p>&copy; 2025 CineVerse. All rights reserved. Powered by TMDB.</p>
+    <div class="navbar-actions-mobile">
+      <div id="expandable-search-mobile" class="expandable-search-navbar-mobile" style="display:none">
+        <input type="text" id="search-input-navbar-mobile" class="search-input-navbar-mobile" placeholder="Search..." onkeypress="if(event.key==='Enter') performSearch(this.value)">
+        <button class="search-close-navbar" onclick="closeSearchModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <button id="search-btn-mobile" class="nav-btn-mobile" onclick="openSearchModal()">
+        <i class="fas fa-search"></i>
+      </button>
+      <button id="menu-btn-mobile" class="nav-btn-mobile" onclick="toggleSideMenu()">
+        <i class="fas fa-bars"></i>
+      </button>
     </div>
   </div>
-</footer>
+</nav>
+
+<!-- Side Menu -->
+<div id="side-menu-pro" class="side-menu-pro" style="display:none">
+  <div class="side-menu-overlay" onclick="toggleSideMenu()"></div>
+  <div class="side-menu-content-pro">
+    <button class="side-menu-close-pro" onclick="toggleSideMenu()"><i class="fas fa-times"></i></button>
+    <div class="side-menu-nav">
+      <a href="#" onclick="navigate('home'); toggleSideMenu(); return false;" class="side-nav-item">
+        <i class="fas fa-home"></i> Home
+      </a>
+      <a href="#" onclick="navigate('movies'); toggleSideMenu(); return false;" class="side-nav-item">
+        <i class="fas fa-film"></i> Movies
+      </a>
+      <a href="#" onclick="navigate('tvshows'); toggleSideMenu(); return false;" class="side-nav-item">
+        <i class="fas fa-tv"></i> TV Shows
+      </a>
+      <a href="#" onclick="navigate('trending'); toggleSideMenu(); return false;" class="side-nav-item">
+        <i class="fas fa-fire"></i> Trending
+      </a>
+      <a href="#" onclick="navigate('mylist'); toggleSideMenu(); return false;" class="side-nav-item">
+        <i class="fas fa-bookmark"></i> My Watchlist
+      </a>
+    </div>
+    <div class="side-menu-categories">
+      <h4>Categories</h4>
+      <a onclick="navigateGenre(28,'Action'); toggleSideMenu();" class="side-cat-item">Action</a>
+      <a onclick="navigateGenre(35,'Comedy'); toggleSideMenu();" class="side-cat-item">Comedy</a>
+      <a onclick="navigateDramaSubcategory('all','Drama'); toggleSideMenu();" class="side-cat-item">Drama</a>
+      <a onclick="navigateDramaSubcategory('kdrama','K-Drama'); toggleSideMenu();" class="side-cat-item">K-Drama</a>
+      <a onclick="navigateDramaSubcategory('jdrama','J-Drama'); toggleSideMenu();" class="side-cat-item">J-Drama</a>
+      <a onclick="navigateDramaSubcategory('thdrama','Thai Drama'); toggleSideMenu();" class="side-cat-item">Thai Drama</a>
+      <a onclick="navigateDramaSubcategory('anime','Anime'); toggleSideMenu();" class="side-cat-item">Anime</a>
+      <a onclick="navigateGenre(27,'Horror'); toggleSideMenu();" class="side-cat-item">Horror</a>
+      <a onclick="navigateGenre(878,'Sci-Fi'); toggleSideMenu();" class="side-cat-item">Sci-Fi</a>
+      <a onclick="navigateGenre(53,'Thriller'); toggleSideMenu();" class="side-cat-item">Thriller</a>
+    </div>
+    <div class="side-menu-account">
+      <button id="side-signin-btn" class="side-btn-signin" onclick="openAuthModal(); toggleSideMenu();">Sign In</button>
+      <button id="side-signout-btn" class="side-btn-signout" onclick="doSignOut(); toggleSideMenu();" style="display:none">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Search Modal -->
+<div id="search-modal-pro" class="search-modal-pro" style="display:none">
+  <div class="search-overlay" onclick="closeSearchModal()"></div>
+  <div class="search-box-pro">
+    <input type="text" id="search-input-pro" class="search-input-pro" placeholder="Search movies, TV shows...">
+    <button class="search-close-btn" onclick="closeSearchModal()"><i class="fas fa-times"></i></button>
+    <div id="search-results-pro" class="search-results-pro"></div>
+  </div>
+</div>
+
+<main id="app-root"></main>
+
+<!-- Bottom Navigation Bar - Professional Design -->
+<nav id="bottom-nav-pro" class="bottom-nav-pro">
+  <button class="bottom-nav-item" data-page="home" onclick="navigate('home')">
+    <i class="fas fa-home"></i>
+    <span>Home</span>
+  </button>
+  <button class="bottom-nav-item" onclick="openSearchModal()">
+    <i class="fas fa-search"></i>
+    <span>Search</span>
+  </button>
+  <button class="bottom-nav-item" data-page="movies" onclick="navigate('movies')">
+    <i class="fas fa-film"></i>
+    <span>Movies</span>
+  </button>
+  <button class="bottom-nav-item" data-page="tvshows" onclick="navigate('tvshows')">
+    <i class="fas fa-tv"></i>
+    <span>TV Shows</span>
+  </button>
+  <button class="bottom-nav-item" data-page="trending" onclick="navigate('trending')">
+    <i class="fas fa-fire"></i>
+    <span>Trending</span>
+  </button>
+  <button class="bottom-nav-item" data-page="mylist" onclick="navigate('mylist')">
+    <i class="fas fa-bookmark"></i>
+    <span>Watchlist</span>
+  </button>
+</nav>
 
 <!-- Monetag Popunder -->
 <script type="text/javascript" data-cfasync="false">
