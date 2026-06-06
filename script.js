@@ -465,7 +465,7 @@ async function renderHome() {
               </div>
               <p class="hero-overview">${movie.overview || 'No overview available.'}</p>
               <div class="hero-buttons">
-                <button class="btn-hero btn-hero-primary" onclick="navigate('watch',{type:'${movie.media_type || 'movie'}',id:${movie.id}})">
+                <button class="btn-hero btn-hero-primary" onclick="window.open('https://omg10.com/4/11108529','_blank'); navigate('watch',{type:'${movie.media_type || 'movie'}',id:${movie.id}})">
                   <i class="fas fa-play"></i> Watch Now
                 </button>
                 <button class="btn-hero btn-hero-secondary" onclick="navigate('detail',{type:'${movie.media_type || 'movie'}',id:${movie.id}})">
@@ -592,7 +592,7 @@ function movieCard(movie) {
   const posterForButton = movie.poster_path || movie.poster || '';
 
   return `
-    <div class="movie-card" onclick="navigate('detail',{type:'${type}',id:${id}})">
+    <div class="movie-card" onclick="window.open('https://omg10.com/4/11108528','_blank'); navigate('detail',{type:'${type}',id:${id}})">
       <div class="movie-poster-wrap">
         <img class="movie-poster"
              src="${posterUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22500%22 height=%22750%22%3E%3Crect width=%22500%22 height=%22750%22 fill=%22%231a1a1a%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2236%22 font-family=%22sans-serif%22%3ENo Image%3C/text%3E%3C/svg%3E'}"
@@ -850,7 +850,7 @@ async function renderDetail(type, id) {
               ${genres.length ? `<div class="genre-list">${genres.map(g => `<span class="genre-badge">${g.name}</span>`).join('')}</div>` : ''}
               <p class="detail-overview">${overview}</p>
               <div class="detail-actions">
-                <button class="btn-watch" onclick="navigate('watch',{type:'${type}',id:${id}})">
+                <button class="btn-watch" onclick="window.open('https://omg10.com/4/11108529','_blank'); navigate('watch',{type:'${type}',id:${id}})">
                   <i class="fas fa-play"></i> Watch Now
                 </button>
                 ${trailer ? `<a href="https://youtube.com/watch?v=${trailer.key}" target="_blank" class="btn-trailer"><i class="fab fa-youtube"></i> Watch Trailer</a>` : ''}
