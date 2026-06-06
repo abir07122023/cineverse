@@ -1,0 +1,7 @@
+{
+  "functions": { "api/*.js": { "maxDuration": 10 } },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/tmdb-proxy.js" },
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}
