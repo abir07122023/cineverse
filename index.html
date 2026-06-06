@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- ONLY Monetag verification meta tag (no other ad scripts) -->
   <meta name="monetag" content="1b3b99c561f6b2123d392c5108626d8a">
-  <!-- Monetag ad script – this shows the actual ads -->
-  <script src="https://quge5.com/88/tag.min.js" data-zone="246561" async data-cfasync="false"></script>
   <title>CineVerse - Stream Movies & TV Shows Online Free</title>
   <meta name="description" content="Watch free movies and TV shows online in HD. Stream the latest releases, trending content, and classics.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&family=Crimson+Text:ital@0;1&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="/style.css">
+  <script>window.TMDB_API_KEY = "5e2176b3af584e2047c93f889e185eca";</script>
 </head>
 <body>
 
@@ -215,7 +215,7 @@
   </button>
 </nav>
 
-<!-- Once‑per‑session popunder (does NOT block clicks or typing) -->
+<!-- Popunder ad (once per session, does NOT block clicks) -->
 <script>
   if (!sessionStorage.getItem('adShown')) {
     sessionStorage.setItem('adShown', 'true');
@@ -225,6 +225,6 @@
   }
 </script>
 
-<script src="/script.js?v=20250607"></script>
+<script src="/script.js"></script>
 </body>
 </html>
