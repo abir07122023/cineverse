@@ -2,8 +2,4 @@ name = "cineverse-free"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
-
-# Routes: catch all traffic to your workers.dev domain
-routes = [
-  { pattern = "cineverse-free.mostakabir2007.workers.dev/*", zone_name = "workers.dev" }
-]
+workers_dev = true
