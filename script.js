@@ -1,10 +1,12 @@
 /* ============================================================
-   CINEVERSE - Advanced Movie Streaming Platform (PROXY ONLY)
+   CINEVERSE - Advanced Movie Streaming Platform
    ============================================================ */
 
+// Removed exposed TMDB_KEY – now using secure proxy
+const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p';
 
-// ─── SECURE TMDB FUNCTION – only proxy, no exposed key ──────
+// ─── SECURE TMDB FUNCTION (calls Vercel proxy) ──────────────
 async function tmdb(endpoint, params = {}) {
   const queryParams = new URLSearchParams({ endpoint, ...params }).toString();
   const proxyUrl = `/api/tmdb-proxy?${queryParams}`;
@@ -89,6 +91,30 @@ const EMBED_SOURCES = [
   }
 ];
 
+const QUALITY_OPTIONS = [
+  { id: 'auto', label: 'Auto', value: 'auto' },
+  { id: '1080p', label: '1080p HD', value: '1080' },
+  { id: '720p', label: '720p HD', value: '720' },
+  { id: '480p', label: '480p', value: '480' },
+  { id: '360p', label: '360p', value: '360' }
+];
+
+const CAPTION_OPTIONS = [
+  { id: 'off', label: 'Off', code: null },
+  { id: 'en', label: 'English', code: 'en' },
+  { id: 'es', label: 'Spanish', code: 'es' },
+  { id: 'fr', label: 'French', code: 'fr' },
+  { id: 'de', label: 'German', code: 'de' },
+  { id: 'it', label: 'Italian', code: 'it' },
+  { id: 'pt', label: 'Portuguese', code: 'pt' },
+  { id: 'ru', label: 'Russian', code: 'ru' },
+  { id: 'ja', label: 'Japanese', code: 'ja' },
+  { id: 'ko', label: 'Korean', code: 'ko' },
+  { id: 'zh', label: 'Chinese', code: 'zh' },
+  { id: 'ar', label: 'Arabic', code: 'ar' },
+  { id: 'hi', label: 'Hindi', code: 'hi' }
+];
+
 // ─── CACHING SYSTEM ───────────────────────────────────────────
 const CACHE_CONFIG = {
   EPISODES_KEY: 'cineverse_episodes_cache',
@@ -153,19 +179,85 @@ function getSortedServers() {
   }
 }
 
+function logServerDiagnostics(serverId, status, details = '') {
+  try {
+    const server = EMBED_SOURCES.find(s => s.id === serverId);
+    const ts = new Date().toLocaleTimeString();
+    const icons = { attempt: '⏳', success: '✅', timeout: '⏱️', blocked: '🚫', notfound: '❌', failed: '❌' };
+    console.log(`[${ts}] ${icons[status] || '🔹'} ${server?.label || serverId} — ${status}${details ? ` | ${details}` : ''}`);
+  } catch (e) {}
+}
+
+window.viewServerDiagnostics = function () {
+  const health = JSON.parse(localStorage.getItem(CACHE_CONFIG.SERVER_HEALTH_KEY) || '{}');
+  console.log('════════════ CINEVERSE SERVERS ════════════');
+  EMBED_SOURCES.forEach(s => {
+    const h = health[s.id] || { failures: 0 };
+    const st = h.failures >= 3 ? '❌' : '✅';
+    console.log(`  ${st} [P${s.priority}] ${s.label} — failures: ${h.failures}`);
+  });
+};
+
 // ─── State ────────────────────────────────────────────────────
 let currentPage = 'home';
 let currentParams = {};
+let searchTimeout = null;
 let heroCarouselInterval = null;
 let currentHeroSlide = 0;
 
 const AUTH_KEY = 'cineverse_user';
 const WATCHLIST_KEY = 'cineverse_mylist';
+const CONTINUE_WATCHING_KEY = 'cineverse_continue_watching';
 const WATCH_HISTORY_KEY = 'cineverse_watch_history';
 
+// ─── Helpers ──────────────────────────────────────────────────
 function updatePageMeta(title, path) {
   document.title = title ? `${title} — CineVerse | Watch Free Movies & TV Shows HD` : 'CineVerse - Watch Movies & TV Shows Online Free in HD';
   history.pushState({ page: currentPage, params: currentParams }, '', path || '/');
+}
+
+function getAuth() {
+  try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch (e) { return null; }
+}
+
+function setAuth(user) {
+  localStorage.setItem(AUTH_KEY, JSON.stringify(user));
+  renderAuthUI();
+  renderProfileDropdown();
+}
+
+function doSignOut() {
+  localStorage.removeItem(AUTH_KEY);
+  renderAuthUI();
+  navigate('home');
+  closeModal('profile-modal');
+  toast('Signed out successfully');
+}
+
+function renderAuthUI() {
+  const user = getAuth();
+  const guestBtns = document.getElementById('guest-btns');
+  const userSection = document.getElementById('user-section');
+  if (guestBtns) guestBtns.style.display = user ? 'none' : 'flex';
+  if (userSection) userSection.style.display = user ? 'block' : 'none';
+  const sideSinginBtn = document.getElementById('side-signin-btn');
+  const sideSignoutBtn = document.getElementById('side-signout-btn');
+  if (sideSinginBtn) sideSinginBtn.style.display = user ? 'none' : 'block';
+  if (sideSignoutBtn) sideSignoutBtn.style.display = user ? 'block' : 'none';
+  if (user) {
+    const el = document.getElementById('user-avatar-text');
+    if (el) el.textContent = user.name[0].toUpperCase();
+  }
+}
+
+function openModal(id) {
+  document.getElementById(id).style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+  document.body.style.overflow = 'auto';
 }
 
 function toast(message, duration = 3000) {
@@ -177,13 +269,25 @@ function toast(message, duration = 3000) {
   setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, duration);
 }
 
+// ─── Navigation ───────────────────────────────────────────────
 function navigate(page, params = {}) {
   document.body.classList.remove('watch-mode');
   currentPage = page;
   currentParams = params;
   renderPage(page, params);
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.classList.toggle('active', link.dataset.nav === page);
+  });
   updateNavbarActiveLink();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function navigateGenre(genreId, genreName) {
+  navigate('genre', { genreId, genreName });
+}
+
+function navigateDramaSubcategory(subCategory, subCategoryName) {
+  navigate('drama', { subCategory, subCategoryName });
 }
 
 window.addEventListener('popstate', function (e) {
@@ -192,7 +296,9 @@ window.addEventListener('popstate', function (e) {
     currentPage = e.state.page;
     currentParams = e.state.params || {};
     renderPage(currentPage, currentParams);
-    updateNavbarActiveLink();
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.classList.toggle('active', link.dataset.nav === currentPage);
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } else {
     renderPage('home', {});
@@ -320,7 +426,6 @@ async function renderHome() {
     root.innerHTML = html;
     startHeroCarousel();
   } catch (error) {
-    console.error('Home error:', error);
     root.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-exclamation-circle"></i></div><h3 class="empty-title">Failed to Load Content</h3><p class="empty-text">Please check your connection and try again.</p></div>`;
   }
 }
@@ -341,6 +446,7 @@ function goToSlide(index) {
   document.querySelectorAll('.hero-indicator').forEach((d, i) => d.classList.toggle('active', i === index));
 }
 
+// ─── Movie Card ───────────────────────────────────────────────
 function movieCard(movie) {
   const title = movie.title || movie.name || 'Untitled';
   let posterUrl = '';
@@ -375,6 +481,7 @@ function movieCard(movie) {
     </div>`;
 }
 
+// ─── Listing ──────────────────────────────────────────────────
 async function renderListing(mediaType, list, title) {
   updatePageMeta(title, `/${mediaType === 'movie' ? 'movies' : 'tvshows'}`);
   const root = document.getElementById('app-root');
@@ -409,6 +516,7 @@ async function renderListing(mediaType, list, title) {
   }
 }
 
+// ─── Trending ─────────────────────────────────────────────────
 async function renderTrending() {
   updatePageMeta('Trending', '/trending');
   const root = document.getElementById('app-root');
@@ -431,6 +539,7 @@ async function renderTrending() {
   }
 }
 
+// ─── Genre ────────────────────────────────────────────────────
 async function renderGenre(genreId, genreName) {
   updatePageMeta(genreName, `/genre/${genreId}`);
   const root = document.getElementById('app-root');
@@ -465,6 +574,7 @@ async function renderGenre(genreId, genreName) {
   }
 }
 
+// ─── Drama Categories ─────────────────────────────────────────
 async function renderDramaCategory(subCategory, subCategoryName) {
   updatePageMeta(subCategoryName, `/drama/${subCategory}`);
   const root = document.getElementById('app-root');
@@ -514,6 +624,7 @@ async function renderDramaCategory(subCategory, subCategoryName) {
   }
 }
 
+// ─── Detail ───────────────────────────────────────────────────
 async function renderDetail(type, id) {
   const root = document.getElementById('app-root');
   try {
@@ -605,11 +716,11 @@ async function renderDetail(type, id) {
         </div>
       </div>`;
   } catch (error) {
-    console.error('Detail error:', error);
     root.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-exclamation-circle"></i></div><h3 class="empty-title">Failed to Load Details</h3><p class="empty-text">Please try again later.</p></div>`;
   }
 }
 
+// ─── Watch Page ───────────────────────────────────────────────
 async function renderWatch(type, id, serverIndex = 0, episode = null) {
   document.body.classList.add('watch-mode');
   const root = document.getElementById('app-root');
@@ -629,7 +740,9 @@ async function renderWatch(type, id, serverIndex = 0, episode = null) {
       title: mediaData.title || mediaData.name,
       poster: mediaData.poster_path ? `${IMG_BASE}/w300${mediaData.poster_path}` : ''
     });
-  } catch (e) {}
+  } catch (e) {
+    trackWatchedMovie({ id, type, title: 'Now Playing', poster: '' });
+  }
 
   if (type === 'tv') {
     try {
@@ -647,7 +760,9 @@ async function renderWatch(type, id, serverIndex = 0, episode = null) {
           setCachedEpisodes(id, selectedSeason, episodes);
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed to load episodes:', e);
+    }
   }
 
   const embedUrl = server.url(id, type, selectedSeason, selectedEpisode);
@@ -737,8 +852,23 @@ async function renderWatch(type, id, serverIndex = 0, episode = null) {
           </div>` : ''}
       </div>
     </div>`;
+
+  const iframe = document.getElementById('main-player');
+  if (iframe) {
+    iframe.dataset.serverIndex = serverIndex;
+    iframe.dataset.type = type;
+    iframe.dataset.id = id;
+    iframe.dataset.season = selectedSeason;
+    iframe.dataset.episode = selectedEpisode;
+    logServerDiagnostics(server.id, 'attempt');
+    setTimeout(() => {
+      recordServerSuccess(server.id);
+      logServerDiagnostics(server.id, 'success');
+    }, 4000);
+  }
 }
 
+// ─── Server modal ─────────────────────────────────────────────
 function openServersModal() {
   const modal = document.getElementById('servers-modal');
   if (modal) modal.classList.remove('hidden');
@@ -752,6 +882,7 @@ function selectServer(serverIndex, type, id) {
   closeServersModal();
 }
 
+// ─── Episode navigation ───────────────────────────────────────
 function previousEpisode() {
   const activeEp = document.querySelector('.episode-item.active');
   if (!activeEp) return;
@@ -776,6 +907,7 @@ function toggleFullscreen() {
   else if (player.mozRequestFullScreen) player.mozRequestFullScreen();
 }
 
+// ─── Switch server (no full reload) ──────────────────────────
 function switchServer(serverIndex, type, id) {
   const server = EMBED_SOURCES[serverIndex];
   if (!server) return;
@@ -789,11 +921,30 @@ function switchServer(serverIndex, type, id) {
     iframe.dataset.id = id;
     iframe.dataset.season = season;
     iframe.dataset.episode = episode;
+    logServerDiagnostics(server.id, 'attempt', 'manual switch');
   }
   document.querySelectorAll('.server-item').forEach((item, i) => {
     item.classList.toggle('active', i === serverIndex);
   });
   toast(`▶ Switched to ${server.label}`);
+}
+
+function autoSwitchServer(type, id) {
+  const iframe = document.getElementById('main-player');
+  if (!iframe) return;
+  const currentIndex = parseInt(iframe.dataset.serverIndex || 0);
+  const sorted = getSortedServers();
+  const currentId = EMBED_SOURCES[currentIndex]?.id;
+  for (const candidate of sorted) {
+    if (candidate.id !== currentId) {
+      const nextIndex = EMBED_SOURCES.findIndex(s => s.id === candidate.id);
+      if (nextIndex !== -1) {
+        toast(`${EMBED_SOURCES[currentIndex]?.label} failed — trying ${candidate.label}...`);
+        switchServer(nextIndex, type, id);
+        return;
+      }
+    }
+  }
 }
 
 function switchEpisode(type, id, season, episode) {
@@ -817,6 +968,7 @@ function switchEpisode(type, id, season, episode) {
   toast(`▶ S${season} E${episode}`);
 }
 
+// ─── Search ───────────────────────────────────────────────────
 async function renderSearch(query) {
   updatePageMeta(`Search: ${query}`, `/search?q=${encodeURIComponent(query)}`);
   const root = document.getElementById('app-root');
@@ -848,6 +1000,7 @@ async function renderSearch(query) {
   }
 }
 
+// ─── Watchlist ────────────────────────────────────────────────
 function addToDetailWatchlist(id, type, title, poster) {
   addToWatchlist({ id, type, title, poster_path: poster });
 }
@@ -857,6 +1010,10 @@ function removeFromWatchlist(id) {
   localStorage.setItem(WATCHLIST_KEY, JSON.stringify(watchlist.filter(item => item.id !== id)));
   toast('✓ Removed from watchlist');
   renderMyList();
+}
+
+function isInWatchlist(id, type) {
+  return JSON.parse(localStorage.getItem(WATCHLIST_KEY) || '[]').some(i => i.id === id && i.type === type);
 }
 
 function handleWatchlistClick(btn, item) {
@@ -913,6 +1070,7 @@ function renderMyList() {
       </div>`).join('')}</div>`;
 }
 
+// ─── Continue Watching ────────────────────────────────────────
 function trackWatchedMovie(movie) {
   const history = JSON.parse(localStorage.getItem(WATCH_HISTORY_KEY) || '[]');
   const idx = history.findIndex(m => m.id === movie.id && m.type === movie.type);
@@ -970,6 +1128,7 @@ function removeFromContinueWatching(id) {
   renderHome();
 }
 
+// ─── Actor ────────────────────────────────────────────────────
 async function renderActor(id) {
   const root = document.getElementById('app-root');
   try {
@@ -1005,6 +1164,7 @@ async function renderActor(id) {
   }
 }
 
+// ─── Profile ──────────────────────────────────────────────────
 function openProfile() {
   const user = getAuth();
   if (!user) return;
@@ -1048,110 +1208,14 @@ function openProfile() {
   openModal('profile-modal');
 }
 
-// ─── Auth Helpers ──────────────────────────────────
-function getAuth() { try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch(e) { return null; } }
-function setAuth(user) { localStorage.setItem(AUTH_KEY, JSON.stringify(user)); renderAuthUI(); renderProfileDropdown(); }
-function doSignOut() { localStorage.removeItem(AUTH_KEY); renderAuthUI(); navigate('home'); closeModal('profile-modal'); toast('Signed out successfully'); }
-function renderAuthUI() {
-  const user = getAuth();
-  const guestBtns = document.getElementById('guest-btns');
-  const userSection = document.getElementById('user-section');
-  if (guestBtns) guestBtns.style.display = user ? 'none' : 'flex';
-  if (userSection) userSection.style.display = user ? 'block' : 'none';
-  const sideSinginBtn = document.getElementById('side-signin-btn');
-  const sideSignoutBtn = document.getElementById('side-signout-btn');
-  if (sideSinginBtn) sideSinginBtn.style.display = user ? 'none' : 'block';
-  if (sideSignoutBtn) sideSignoutBtn.style.display = user ? 'block' : 'none';
-  if (user) {
-    const el = document.getElementById('user-avatar-text');
-    if (el) el.textContent = user.name[0].toUpperCase();
-  }
-}
-function openModal(id) { document.getElementById(id).style.display = 'flex'; document.body.style.overflow = 'hidden'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; document.body.style.overflow = 'auto'; }
-function openAuthModal() { openModal('auth-modal'); }
-
-function toggleProfileDropdown() {
-  const dropdown = document.getElementById('profile-dropdown-desktop');
-  if (dropdown) dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-}
-function renderProfileDropdown() {
-  const user = getAuth();
-  const dropdown = document.getElementById('profile-dropdown-content-desktop');
-  if (!dropdown) return;
-  dropdown.innerHTML = user ? `
-    <div class="profile-user-info">
-      <div class="profile-user-name">${user.name}</div>
-      <div class="profile-user-email">${user.email}</div>
-    </div>
-    <a href="#" onclick="navigate('mylist'); document.getElementById('profile-dropdown-desktop').style.display='none'; return false;" class="profile-dropdown-item">
-      <i class="fas fa-bookmark"></i> My Watchlist
-    </a>
-    <a href="#" onclick="openProfile(); document.getElementById('profile-dropdown-desktop').style.display='none'; return false;" class="profile-dropdown-item">
-      <i class="fas fa-user"></i> My Account
-    </a>
-    <div class="profile-dropdown-divider"></div>
-    <a href="#" onclick="doSignOut(); document.getElementById('profile-dropdown-desktop').style.display='none'; return false;" class="profile-dropdown-item">
-      <i class="fas fa-sign-out-alt"></i> Sign Out
-    </a>` : `
-    <a href="#" onclick="openModal('auth-modal'); document.getElementById('profile-dropdown-desktop').style.display='none'; return false;" class="profile-dropdown-item">
-      <i class="fas fa-sign-in-alt"></i> Sign In
-    </a>`;
-}
-
-function toggleSideMenu() {
-  const sideMenu = document.getElementById('side-menu-pro');
-  if (!sideMenu) return;
-  const isOpen = sideMenu.style.display === 'flex';
-  sideMenu.style.display = isOpen ? 'none' : 'flex';
-  document.body.style.overflow = isOpen ? '' : 'hidden';
-}
-function openSearchModal() {
-  const expandDesktop = document.getElementById('expandable-search-desktop');
-  const expandMobile = document.getElementById('expandable-search-mobile');
-  if (expandDesktop && window.innerWidth >= 1024) {
-    expandDesktop.style.display = 'flex';
-    document.getElementById('search-input-navbar-desktop')?.focus();
-  } else if (expandMobile && window.innerWidth < 1024) {
-    expandMobile.style.display = 'flex';
-    document.getElementById('search-input-navbar-mobile')?.focus();
-  }
-}
-function closeSearchModal() {
-  const expandDesktop = document.getElementById('expandable-search-desktop');
-  const expandMobile = document.getElementById('expandable-search-mobile');
-  if (expandDesktop) { expandDesktop.style.display = 'none'; const inp = document.getElementById('search-input-navbar-desktop'); if (inp) inp.value = ''; }
-  if (expandMobile) { expandMobile.style.display = 'none'; const inp = document.getElementById('search-input-navbar-mobile'); if (inp) inp.value = ''; }
-}
-async function performSearch(query) {
-  if (!query || query.trim().length < 2) { toast('Please enter at least 2 characters'); return; }
-  closeSearchModal();
-  navigate('search', { query: query.trim() });
-}
-function setupSearchFunctionality() {
-  const searchInput = document.getElementById('search-input-pro');
-  if (!searchInput) return;
-  searchInput.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-      const query = e.target.value.trim();
-      if (query) { navigate('search', { query }); closeSearchModal(); }
-    }
-  });
-}
-
-function updateNavbarActiveLink() {
-  document.querySelectorAll('.nav-link-desktop[data-page], .bottom-nav-item').forEach(link => {
-    const page = link.dataset.page;
-    if (page) link.classList.toggle('active', page === currentPage);
-  });
-}
-
+// ─── Init ─────────────────────────────────────────────────────
 document.addEventListener('contextmenu', e => { e.preventDefault(); return false; });
 document.addEventListener('keydown', function (e) {
   if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'C', 'J', 'K'].includes(e.key))) {
     e.preventDefault(); return false;
   }
 });
+
 document.addEventListener('DOMContentLoaded', function () {
   renderAuthUI();
   window.addEventListener('scroll', function () {
@@ -1194,6 +1258,108 @@ document.addEventListener('DOMContentLoaded', function () {
   if (profileCloseBtn) profileCloseBtn.onclick = () => closeModal('profile-modal');
   history.replaceState({ page: 'home', params: {} }, '', '/');
   navigate('home');
+});
+
+function toggleSideMenu() {
+  const sideMenu = document.getElementById('side-menu-pro');
+  if (!sideMenu) return;
+  const isOpen = sideMenu.style.display === 'flex';
+  sideMenu.style.display = isOpen ? 'none' : 'flex';
+  document.body.style.overflow = isOpen ? '' : 'hidden';
+}
+
+function openSearchModal() {
+  const expandDesktop = document.getElementById('expandable-search-desktop');
+  const expandMobile = document.getElementById('expandable-search-mobile');
+  if (expandDesktop && window.innerWidth >= 1024) {
+    expandDesktop.style.display = 'flex';
+    document.getElementById('search-input-navbar-desktop')?.focus();
+  } else if (expandMobile && window.innerWidth < 1024) {
+    expandMobile.style.display = 'flex';
+    document.getElementById('search-input-navbar-mobile')?.focus();
+  }
+}
+
+function closeSearchModal() {
+  const expandDesktop = document.getElementById('expandable-search-desktop');
+  const expandMobile = document.getElementById('expandable-search-mobile');
+  if (expandDesktop) { expandDesktop.style.display = 'none'; const inp = document.getElementById('search-input-navbar-desktop'); if (inp) inp.value = ''; }
+  if (expandMobile) { expandMobile.style.display = 'none'; const inp = document.getElementById('search-input-navbar-mobile'); if (inp) inp.value = ''; }
+}
+
+async function performSearch(query) {
+  if (!query || query.trim().length < 2) { toast('Please enter at least 2 characters'); return; }
+  closeSearchModal();
+  navigate('search', { query: query.trim() });
+}
+
+function setupSearchFunctionality() {
+  const searchInput = document.getElementById('search-input-pro');
+  if (!searchInput) return;
+  searchInput.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+      const query = e.target.value.trim();
+      if (query) { navigate('search', { query }); closeSearchModal(); }
+    }
+  });
+}
+
+function openAuthModal() { openModal('auth-modal'); }
+
+function toggleProfileDropdown() {
+  const dropdown = document.getElementById('profile-dropdown-desktop');
+  if (dropdown) dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+}
+
+function updateNavbarActiveLink() {
+  document.querySelectorAll('.nav-link-desktop[data-page], .bottom-nav-item').forEach(link => {
+    const page = link.dataset.page;
+    if (page) link.classList.toggle('active', page === currentPage);
+  });
+}
+
+function renderProfileDropdown() {
+  const user = getAuth();
+  const dropdown = document.getElementById('profile-dropdown-content-desktop');
+  if (!dropdown) return;
+  dropdown.innerHTML = user ? `
+    <div class="profile-user-info">
+      <div class="profile-user-name">${user.name}</div>
+      <div class="profile-user-email">${user.email}</div>
+    </div>
+    <a href="#" onclick="navigate('mylist'); document.getElementById('profile-dropdown-desktop').style.display='none'; return false;" class="profile-dropdown-item">
+      <i class="fas fa-bookmark" style="width:20px;"></i> My Watchlist
+    </a>
+    <a href="#" onclick="openProfile(); document.getElementById('profile-dropdown-desktop').style.display='none'; return false;" class="profile-dropdown-item">
+      <i class="fas fa-user" style="width:20px;"></i> My Account
+    </a>
+    <div class="profile-dropdown-divider"></div>
+    <a href="#" onclick="doSignOut(); document.getElementById('profile-dropdown-desktop').style.display='none'; return false;" class="profile-dropdown-item">
+      <i class="fas fa-sign-out-alt" style="width:20px;"></i> Sign Out
+    </a>` : `
+    <a href="#" onclick="openModal('auth-modal'); document.getElementById('profile-dropdown-desktop').style.display='none'; return false;" class="profile-dropdown-item">
+      <i class="fas fa-sign-in-alt" style="width:20px;"></i> Sign In
+    </a>`;
+}
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    closeSearchModal();
+    const sideMenu = document.getElementById('side-menu-pro');
+    if (sideMenu && sideMenu.style.display === 'flex') toggleSideMenu();
+    document.body.style.overflow = 'auto';
+  }
+});
+
+document.addEventListener('click', function (e) {
+  const profileBtn = document.getElementById('profile-btn-desktop');
+  const dropdown = document.getElementById('profile-dropdown-desktop');
+  if (profileBtn && dropdown && !profileBtn.contains(e.target) && !dropdown.contains(e.target)) {
+    dropdown.style.display = 'none';
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
   setupSearchFunctionality();
   renderProfileDropdown();
   updateNavbarActiveLink();
