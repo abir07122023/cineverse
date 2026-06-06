@@ -1,5 +1,5 @@
 /* ============================================================
-   CINEVERSE - Advanced Movie Streaming Platform (Stable)
+   CINEVERSE - Advanced Movie Streaming Platform (Stable + Retries)
    ============================================================ */
 
 const IMG_BASE = 'https://image.tmdb.org/t/p';
@@ -449,18 +449,30 @@ async function renderTrending() {
   }
 }
 
-async function renderGenre(genreId, genreName) {
+async function renderGenre(genreId, genreName, retryCount = 0) {
   updatePageMeta(genreName, `/genre/${genreId}`);
   const root = document.getElementById('app-root');
   let page = 1;
+  const maxRetries = 2;
+  const retryDelay = 1000;
   try {
     const data = await tmdb('/discover/movie', { with_genres: genreId, sort_by: 'popularity.desc', page: 1 });
+    const results = data.results || [];
+    if (results.length === 0) {
+      root.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-film"></i></div>
+          <h3 class="empty-title">No movies found in ${genreName}</h3>
+          <p class="empty-text">Try another category or check back later.</p>
+        </div>`;
+      return;
+    }
     root.innerHTML = `
       <div class="content-section" style="margin-top:24px;">
         <h2 class="section-title">${genreName}</h2>
       </div>
       <div class="movie-grid" id="genre-grid">
-        ${data.results.map(movie => movieCard({ ...movie, media_type: 'movie' })).join('')}
+        ${results.map(movie => movieCard({ ...movie, media_type: 'movie' })).join('')}
       </div>
       <div style="text-align:center;padding:40px;">
         <button class="btn-primary" id="load-more-btn" style="padding:12px 32px;">
@@ -479,14 +491,22 @@ async function renderGenre(genreId, genreName) {
       if (page >= next.total_pages) document.getElementById('load-more-btn').remove();
     };
   } catch (error) {
+    if (retryCount < maxRetries) {
+      console.log(`Retrying renderGenre (attempt ${retryCount + 1} of ${maxRetries}) after ${retryDelay}ms`);
+      setTimeout(() => renderGenre(genreId, genreName, retryCount + 1), retryDelay);
+      root.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;min-height:60vh;"><div class="spinner"></div><p>Retrying...</p></div>';
+      return;
+    }
     root.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-film"></i></div><h3 class="empty-title">Failed to Load ${genreName}</h3><p class="empty-text">Please try again later.</p></div>`;
   }
 }
 
-async function renderDramaCategory(subCategory, subCategoryName) {
+async function renderDramaCategory(subCategory, subCategoryName, retryCount = 0) {
   updatePageMeta(subCategoryName, `/drama/${subCategory}`);
   const root = document.getElementById('app-root');
   let page = 1;
+  const maxRetries = 2;
+  const retryDelay = 1000;
   try {
     const getDramaParams = (nextPage) => {
       const base = { sort_by: 'popularity.desc', include_adult: false, page: nextPage };
@@ -500,16 +520,21 @@ async function renderDramaCategory(subCategory, subCategoryName) {
     };
     const data = await tmdb('/discover/tv', getDramaParams(1));
     const results = (data.results || []).filter(show => show.poster_path);
+    if (results.length === 0) {
+      root.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-tv"></i></div>
+          <h3 class="empty-title">No ${subCategoryName} found</h3>
+          <p class="empty-text">Try another category or check back later.</p>
+        </div>`;
+      return;
+    }
     root.innerHTML = `
       <div class="content-section" style="margin-top:24px;">
         <h2 class="section-title">${subCategoryName}</h2>
       </div>
       <div class="movie-grid" id="drama-grid">
-        ${results.length ? results.map(show => movieCard({ ...show, media_type: 'tv' })).join('') : `
-          <div class="empty-state" style="grid-column:1/-1;">
-            <div class="empty-icon"><i class="fas fa-film"></i></div>
-            <h3 class="empty-title">No ${subCategoryName} Found</h3>
-          </div>`}
+        ${results.map(show => movieCard({ ...show, media_type: 'tv' })).join('')}
       </div>
       <div style="text-align:center;padding:40px;">
         <button class="btn-primary" id="load-more-btn" style="padding:12px 32px;">
@@ -528,7 +553,13 @@ async function renderDramaCategory(subCategory, subCategoryName) {
       if (page >= next.total_pages) document.getElementById('load-more-btn').remove();
     };
   } catch (error) {
-    root.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-film"></i></div><h3 class="empty-title">Failed to Load ${subCategoryName}</h3></div>`;
+    if (retryCount < maxRetries) {
+      console.log(`Retrying renderDramaCategory (attempt ${retryCount + 1} of ${maxRetries}) after ${retryDelay}ms`);
+      setTimeout(() => renderDramaCategory(subCategory, subCategoryName, retryCount + 1), retryDelay);
+      root.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;min-height:60vh;"><div class="spinner"></div><p>Retrying...</p></div>';
+      return;
+    }
+    root.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-tv"></i></div><h3 class="empty-title">Failed to Load ${subCategoryName}</h3><p class="empty-text">Please try again later.</p></div>`;
   }
 }
 
@@ -882,9 +913,11 @@ function switchEpisode(type, id, season, episode) {
   toast(`▶ S${season} E${episode}`);
 }
 
-async function renderSearch(query) {
+async function renderSearch(query, retryCount = 0) {
   updatePageMeta(`Search: ${query}`, `/search?q=${encodeURIComponent(query)}`);
   const root = document.getElementById('app-root');
+  const maxRetries = 2;
+  const retryDelay = 1000;
   if (!query || !query.trim()) {
     root.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-search"></i></div><h3 class="empty-title">Start Searching</h3><p class="empty-text">Type something in the search box.</p></div>`;
     return;
@@ -898,8 +931,16 @@ async function renderSearch(query) {
       ...movies.results.map(m => ({ ...m, media_type: 'movie' })),
       ...tv.results.map(t => ({ ...t, media_type: 'tv' }))
     ].filter(item => item.poster_path);
-    if (!allResults.length) {
-      root.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-search"></i></div><h3 class="empty-title">No Results Found</h3><p class="empty-text">No results for "${query}".</p></div>`;
+    if (allResults.length === 0) {
+      root.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-search"></i></div>
+          <h3 class="empty-title">No matches found</h3>
+          <p class="empty-text">We couldn't find anything matching "${query}". Try different keywords or check for typos.</p>
+          <div class="filters-section" style="margin-top:20px;">
+            <button class="btn-primary" onclick="navigate('home')" style="margin:10px auto;">Browse All Movies</button>
+          </div>
+        </div>`;
       return;
     }
     root.innerHTML = `
@@ -909,7 +950,19 @@ async function renderSearch(query) {
       </div>
       <div class="movie-grid">${allResults.map(movie => movieCard(movie)).join('')}</div>`;
   } catch (error) {
-    root.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-exclamation-circle"></i></div><h3 class="empty-title">Search Failed</h3><p class="empty-text">Please try again.</p></div>`;
+    if (retryCount < maxRetries) {
+      console.log(`Retrying search (attempt ${retryCount + 1} of ${maxRetries}) after ${retryDelay}ms`);
+      setTimeout(() => renderSearch(query, retryCount + 1), retryDelay);
+      root.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;min-height:60vh;"><div class="spinner"></div><p>Searching...</p></div>';
+      return;
+    }
+    console.error('Search error after retries:', error);
+    root.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-exclamation-circle"></i></div>
+        <h3 class="empty-title">Search failed</h3>
+        <p class="empty-text">Could not complete search. Please try again.</p>
+      </div>`;
   }
 }
 
@@ -1266,6 +1319,5 @@ document.addEventListener('DOMContentLoaded', function () {
   setupSearchFunctionality();
   renderProfileDropdown();
   updateNavbarActiveLink();
-});
-          
+}); 
         
