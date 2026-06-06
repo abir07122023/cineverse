@@ -1,15 +1,15 @@
 /* ============================================================
-   CINEVERSE - Advanced Movie Streaming Platform (SECURE)
+   CINEVERSE - Advanced Movie Streaming Platform (PROXY ONLY)
    ============================================================ */
 
 const IMG_BASE = 'https://image.tmdb.org/t/p';
 
-// ─── SECURE TMDB FUNCTION (calls Vercel proxy) ──────────────
+// ─── SECURE TMDB FUNCTION – only proxy, no exposed key ──────
 async function tmdb(endpoint, params = {}) {
   const queryParams = new URLSearchParams({ endpoint, ...params }).toString();
   const proxyUrl = `/api/tmdb-proxy?${queryParams}`;
   const res = await fetch(proxyUrl);
-  if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+  if (!res.ok) throw new Error(`TMDB proxy error: ${res.status}`);
   return res.json();
 }
 
