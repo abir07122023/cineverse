@@ -1,4 +1,6 @@
+# netlify.toml – Redirect all traffic from Netlify to Vercel
 [[redirects]]
   from = "/*"
-  to = "/index.html"
-  status = 200
+  to = "https://cineverse-free.vercel.app/:splat"
+  status = 301
+  force = true
