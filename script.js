@@ -1218,7 +1218,6 @@ document.addEventListener('keydown', function (e) {
 });
 
 document.addEventListener('DOMContentLoaded', function () {
-  // --- Keep all your existing initialisation code ---
   renderAuthUI();
   window.addEventListener('scroll', function () {
     const nb = document.getElementById('navbar-desktop') || document.getElementById('navbar-mobile');
@@ -1258,43 +1257,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const profileCloseBtn = document.getElementById('profile-close-btn');
   if (authCloseBtn) authCloseBtn.onclick = () => closeModal('auth-modal');
   if (profileCloseBtn) profileCloseBtn.onclick = () => closeModal('profile-modal');
-
-  // --- NEW: Direct URL routing (refresh & share) ---
-  const path = window.location.pathname;
-  if (path === '/' || path === '') {
-    navigate('home');
-  } else if (path.startsWith('/movie/')) {
-    const id = path.split('/')[2];
-    if (id && !isNaN(parseInt(id))) navigate('detail', { type: 'movie', id: parseInt(id) });
-    else navigate('home');
-  } else if (path.startsWith('/watch/movie/')) {
-    const id = path.split('/')[3];
-    if (id && !isNaN(parseInt(id))) navigate('watch', { type: 'movie', id: parseInt(id) });
-    else navigate('home');
-  } else if (path.startsWith('/search')) {
-    const params = new URLSearchParams(window.location.search);
-    const query = params.get('q');
-    if (query) navigate('search', { query });
-    else navigate('home');
-  } else if (path.startsWith('/genre/')) {
-    const id = path.split('/')[2];
-    if (id && !isNaN(parseInt(id))) navigate('genre', { genreId: parseInt(id), genreName: 'Genre' });
-    else navigate('home');
-  } else if (path.startsWith('/drama/')) {
-    const sub = path.split('/')[2];
-    if (sub) navigate('drama', { subCategory: sub, subCategoryName: sub });
-    else navigate('home');
-  } else if (path.startsWith('/mylist')) {
-    navigate('mylist');
-  } else if (path.startsWith('/trending')) {
-    navigate('trending');
-  } else if (path.startsWith('/movies')) {
-    navigate('movies');
-  } else if (path.startsWith('/tvshows')) {
-    navigate('tvshows');
-  } else {
-    navigate('home');
-  }
+  history.replaceState({ page: 'home', params: {} }, '', '/');
+  navigate('home');
 });
 
 function toggleSideMenu() {
