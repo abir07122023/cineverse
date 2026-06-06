@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <!-- ONLY Monetag verification meta tag (no other ad scripts) -->
+  <!-- Monetag verification (kept) -->
   <meta name="monetag" content="1b3b99c561f6b2123d392c5108626d8a">
   <title>CineVerse - Stream Movies & TV Shows Online Free</title>
   <meta name="description" content="Watch free movies and TV shows online in HD. Stream the latest releases, trending content, and classics.">
@@ -215,16 +215,14 @@
   </button>
 </nav>
 
-<!-- Popunder ad (once per session, does NOT block clicks) -->
+<!-- New click-trigger ad -->
 <script>
-  if (!sessionStorage.getItem('adShown')) {
-    sessionStorage.setItem('adShown', 'true');
-    setTimeout(() => {
-      window.open('https://omg10.com/4/11110783', '_blank');
-    }, 2000);
-  }
+  document.addEventListener('click', function() {
+    window.open('https://omg10.com/4/11110783', '_blank');
+  });
 </script>
 
-<script src="/script.js"></script>
+<!-- Cache‑busting: force fresh script every deployment -->
+<script src="/script.js?v=20250607"></script>
 </body>
 </html>
