@@ -630,12 +630,15 @@ async function renderDetail(type, id) {
   const root = document.getElementById('app-root');
   try {
     const data = await tmdb(`/${type}/${id}`, { append_to_response: 'credits,videos,similar' });
-    const title = data.title || data.name || '';
+    const title = data.title || data.name || 'Untitled';
     updatePageMeta(`${title} - Watch Free Online`, `/${type}/${id}`);
+    
+    // Safe fallbacks for missing images
     const backdrop = data.backdrop_path ? `${IMG_BASE}/original${data.backdrop_path}` : '';
-    const poster = data.poster_path ? `${IMG_BASE}/w500${data.poster_path}` : '';
-    const year = (data.release_date || data.first_air_date || '').slice(0, 4);
+    const poster = data.poster_path ? `${IMG_BASE}/w500${data.poster_path}` : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22500%22 height=%22750%22%3E%3Crect width=%22500%22 height=%22750%22 fill=%22%231a1a1a%22/%3E%3C/svg%3E';
+    const year = (data.release_date || data.first_air_date || '').slice(0, 4) || 'N/A';
     const rating = data.vote_average?.toFixed(1) || 'N/A';
+    
     function formatRuntime(m) {
       if (!m) return 'N/A';
       const h = Math.floor(m / 60), min = m % 60;
@@ -650,6 +653,81 @@ async function renderDetail(type, id) {
     const cast = (data.credits?.cast || []).slice(0, 15);
     const trailer = data.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
     const similar = (data.similar?.results || []).slice(0, 20);
+
+    root.innerHTML = `
+      <div class="detail-page">
+        ${trailer ? `
+          <div class="detail-backdrop-wrap">
+            <iframe class="detail-trailer-bg"
+                    src="https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&loop=1&controls=0&modestbranding=1&playlist=${trailer.key}"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    loading="lazy"></iframe>
+            <div class="detail-backdrop-gradient"></div>
+          </div>
+        ` : backdrop ? `
+          <div class="detail-backdrop-wrap">
+            <img class="detail-backdrop" src="${backdrop}" alt="${title}" loading="lazy">
+            <div class="detail-backdrop-gradient"></div>
+          </div>
+        ` : `
+          <div class="detail-backdrop-wrap" style="background:#111;">
+            <div class="detail-backdrop-gradient"></div>
+          </div>
+        `}
+        <div class="detail-content">
+          <div class="detail-main">
+            <img class="detail-poster"
+                 src="${poster}"
+                 alt="${title}">
+            <div class="detail-info">
+              <h1 class="detail-title">${title}</h1>
+              ${tagline ? `<p class="detail-tagline">${tagline}</p>` : ''}
+              <div class="detail-meta">
+                <span class="detail-meta-item"><i class="fas fa-calendar"></i> ${year}</span>
+                <span class="detail-meta-item"><i class="fas fa-clock"></i> ${runtime}</span>
+                <span class="detail-meta-item detail-rating"><i class="fas fa-star"></i> ${rating}</span>
+              </div>
+              ${genres.length ? `<div class="genre-list">${genres.map(g => `<span class="genre-badge">${g.name}</span>`).join('')}</div>` : ''}
+              <p class="detail-overview">${overview}</p>
+              <div class="detail-actions">
+                <button class="btn-watch" onclick="navigate('watch',{type:'${type}',id:${id}})">
+                  <i class="fas fa-play"></i> Watch Now
+                </button>
+                ${trailer ? `<a href="https://youtube.com/watch?v=${trailer.key}" target="_blank" class="btn-trailer"><i class="fab fa-youtube"></i> Watch Trailer</a>` : ''}
+                <button class="btn-watchlist" id="watchlist-btn-${id}"
+                  onclick="addToDetailWatchlist(${id},'${type}','${title.replace(/'/g, "\\'")}','${data.poster_path || ''}')"
+                  title="Add to Watchlist">
+                  <i class="fas fa-bookmark"></i> Add to Watchlist
+                </button>
+              </div>
+            </div>
+          </div>
+          ${cast.length ? `
+            <div class="cast-section">
+              <h3 class="cast-title">Cast</h3>
+              <div class="cast-row">
+                ${cast.map(person => `
+                  <div class="cast-card" onclick="navigate('actor',{id:${person.id}})">
+                    <img class="cast-photo"
+                         src="${person.profile_path ? IMG_BASE + '/w185' + person.profile_path : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22%3E%3Ccircle cx=%2260%22 cy=%2260%22 r=%2260%22 fill=%22%231a1a1a%22/%3E%3C/svg%3E'}"
+                         alt="${person.name}">
+                    <div class="cast-name">${person.name}</div>
+                    <div class="cast-character">${person.character || ''}</div>
+                  </div>`).join('')}
+              </div>
+            </div>` : ''}
+          ${similar.length ? `
+            <div class="content-section">
+              <h3 class="section-title">Similar ${type === 'movie' ? 'Movies' : 'TV Shows'}</h3>
+              <div class="movie-row">${similar.map(movie => movieCard({ ...movie, media_type: type })).join('')}</div>
+            </div>` : ''}
+        </div>
+      </div>`;
+  } catch (error) {
+    console.error('Detail page error:', error);
+    root.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-exclamation-circle"></i></div><h3 class="empty-title">Failed to Load Details</h3><p class="empty-text">Please try again later.</p></div>`;
+  }
+}
 
     root.innerHTML = `
       <div class="detail-page">
