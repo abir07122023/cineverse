@@ -2,13 +2,19 @@
    CINEVERSE - Advanced Movie Streaming Platform
    ============================================================ */
 
-const TMDB_KEY = '5e2176b3af584e2047c93f889e185eca';
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p';
 
+// ─── SECURE TMDB FUNCTION (calls Vercel proxy, no API key exposed) ───
+async function tmdb(endpoint, params = {}) {
+  const queryParams = new URLSearchParams({ endpoint, ...params }).toString();
+  const proxyUrl = `/api/tmdb-proxy?${queryParams}`;
+  const res = await fetch(proxyUrl);
+  if (!res.ok) throw new Error(`TMDB proxy error: ${res.status}`);
+  return res.json();
+}
+
 // ─── EMBED SERVERS (updated — broken ones replaced) ──────────
-// Removed: vidsrc.to (domain seized), ridomovies.tv (unreliable)
-// Added:   vidsrc.xyz, smashystream, superembed
 const EMBED_SOURCES = [
   {
     id: 'vidlink',
@@ -264,13 +270,10 @@ function toast(message, duration = 3000) {
 
 // ─── Navigation ───────────────────────────────────────────────
 function navigate(page, params = {}) {
-  // FIX: remove watch-mode class when leaving the watch page
   document.body.classList.remove('watch-mode');
-
   currentPage = page;
   currentParams = params;
   renderPage(page, params);
-
   document.querySelectorAll('.nav-link').forEach(link => {
     link.classList.toggle('active', link.dataset.nav === page);
   });
@@ -301,12 +304,7 @@ window.addEventListener('popstate', function (e) {
   }
 });
 
-async function tmdb(endpoint, params = {}) {
-  const qs = new URLSearchParams({ api_key: TMDB_KEY, language: 'en-US', ...params }).toString();
-  const res = await fetch(`${TMDB_BASE}${endpoint}?${qs}`);
-  if (!res.ok) throw new Error(`TMDB ${res.status}`);
-  return res.json();
-}
+// ─── Note: The tmdb() function is now defined at the top (secure version) ───
 
 function renderPage(page, params) {
   const root = document.getElementById('app-root');
@@ -724,14 +722,8 @@ async function renderDetail(type, id) {
 }
 
 // ─── Watch Page ───────────────────────────────────────────────
-// FIX: Adds watch-mode class to body → hides mobile navbar/bottom-nav
-//      so the player fills the full screen on mobile.
-// FIX: Better iframe allow attributes for mobile playback
-// FIX: Removed loading="lazy" from main player iframe
 async function renderWatch(type, id, serverIndex = 0, episode = null) {
-  // ★ KEY FIX: hide mobile navbar + bottom-nav during watch
   document.body.classList.add('watch-mode');
-
   const root = document.getElementById('app-root');
   const server = EMBED_SOURCES[serverIndex] || EMBED_SOURCES[0];
   updatePageMeta('Watch', `/watch/${type}/${id}`);
@@ -862,7 +854,6 @@ async function renderWatch(type, id, serverIndex = 0, episode = null) {
       </div>
     </div>`;
 
-  // Set up iframe data
   const iframe = document.getElementById('main-player');
   if (iframe) {
     iframe.dataset.serverIndex = serverIndex;
@@ -870,10 +861,7 @@ async function renderWatch(type, id, serverIndex = 0, episode = null) {
     iframe.dataset.id = id;
     iframe.dataset.season = selectedSeason;
     iframe.dataset.episode = selectedEpisode;
-
     logServerDiagnostics(server.id, 'attempt');
-
-    // Record success after 4 seconds (iframe loaded something)
     setTimeout(() => {
       recordServerSuccess(server.id);
       logServerDiagnostics(server.id, 'success');
@@ -1222,7 +1210,6 @@ function openProfile() {
 }
 
 // ─── Init ─────────────────────────────────────────────────────
-// Disable right-click (light protection)
 document.addEventListener('contextmenu', e => { e.preventDefault(); return false; });
 document.addEventListener('keydown', function (e) {
   if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'C', 'J', 'K'].includes(e.key))) {
@@ -1232,12 +1219,10 @@ document.addEventListener('keydown', function (e) {
 
 document.addEventListener('DOMContentLoaded', function () {
   renderAuthUI();
-
   window.addEventListener('scroll', function () {
     const nb = document.getElementById('navbar-desktop') || document.getElementById('navbar-mobile');
     if (nb) nb.classList.toggle('scrolled', window.scrollY > 50);
   });
-
   document.querySelectorAll('.auth-tab').forEach(tab => {
     tab.onclick = function () {
       document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -1247,7 +1232,6 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('signup-form').style.display = isSignIn ? 'none' : 'flex';
     };
   });
-
   document.getElementById('signin-submit-btn').onclick = function () {
     const email = document.getElementById('si-email').value.trim();
     const password = document.getElementById('si-password').value;
@@ -1256,7 +1240,6 @@ document.addEventListener('DOMContentLoaded', function () {
     closeModal('auth-modal');
     toast('Signed in successfully!');
   };
-
   document.getElementById('signup-submit-btn').onclick = function () {
     const name = document.getElementById('su-name').value.trim();
     const email = document.getElementById('su-email').value.trim();
@@ -1270,17 +1253,14 @@ document.addEventListener('DOMContentLoaded', function () {
     closeModal('auth-modal');
     toast('Account created successfully!');
   };
-
   const authCloseBtn = document.getElementById('auth-close-btn');
   const profileCloseBtn = document.getElementById('profile-close-btn');
   if (authCloseBtn) authCloseBtn.onclick = () => closeModal('auth-modal');
   if (profileCloseBtn) profileCloseBtn.onclick = () => closeModal('profile-modal');
-
   history.replaceState({ page: 'home', params: {} }, '', '/');
   navigate('home');
 });
 
-// ─── FIX: Robust side menu toggle ─────────────────────────────
 function toggleSideMenu() {
   const sideMenu = document.getElementById('side-menu-pro');
   if (!sideMenu) return;
