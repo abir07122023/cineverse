@@ -4193,19 +4193,40 @@ input, textarea {
 @media (max-width: 1023px) {
   .watch-page {
     height: auto !important;
+    overflow: visible !important;
     min-height: 100svh;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
   }
 
   .watch-content {
+    display: block !important;
     overflow: visible !important;
-    flex: none !important;
     height: auto !important;
     padding-bottom: 80px;
   }
 
+  .player-container {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
   .player-wrapper {
+    position: relative !important;
+    width: 100% !important;
+    height: 0 !important;
+    padding-bottom: 56.25% !important;
     overflow: hidden !important;
+  }
+
+  .player-wrapper iframe {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .episodes-panel {
+    max-height: 300px;
+    overflow-y: auto;
   }
 }
